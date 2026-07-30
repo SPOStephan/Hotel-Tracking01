@@ -61,6 +61,12 @@ export default async function HomePage() {
         </li>
         <li>
           <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-800">
+            POST /api/v1/clicks
+          </code>{" "}
+          — Touchpoint-Logging
+        </li>
+        <li>
+          <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-800">
             POST /api/v1/conversions
           </code>{" "}
           — Buchungs-Ingestion

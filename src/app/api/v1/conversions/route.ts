@@ -1,37 +1,14 @@
-import {
-  buildChannelLookupKeys,
-  conversionRequestSchema,
-} from "@/lib/conversions/schema";
+import { corsHeaders, corsOptionsResponse } from "@/lib/api/cors";
+import { matchChannel } from "@/lib/channels/match";
 import { calculateCommission } from "@/lib/conversions/calculate-commission";
+import { conversionRequestSchema } from "@/lib/conversions/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Channel } from "@/types/database";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-function corsHeaders(request: Request): HeadersInit {
-  const origin = request.headers.get("origin") ?? "*";
-  const allowed = process.env.HGAE_CORS_ORIGINS ?? "*";
-  const allowOrigin =
-    allowed === "*" || allowed.split(",").map((s) => s.trim()).includes(origin)
-      ? allowed === "*"
-        ? origin === "null"
-          ? "*"
-          : origin
-        : origin
-      : allowed.split(",")[0]?.trim() || "*";
-
-  return {
-    "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-    Vary: "Origin",
-  };
-}
-
 export async function OPTIONS(request: Request) {
-  return new NextResponse(null, { status: 204, headers: corsHeaders(request) });
+  return corsOptionsResponse(request);
 }
 
 export async function POST(request: Request) {
@@ -72,7 +49,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Deduplicate: transaction_id must be unique
   const { data: existing, error: existingError } = await supabase
     .from("bookings")
     .select("id, transaction_id, status")
@@ -100,7 +76,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Ensure hotel exists
   const { data: hotel, error: hotelError } = await supabase
     .from("hotels")
     .select("id")
@@ -122,45 +97,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const lookupKeys = buildChannelLookupKeys({
+  const { channel, error: matchError } = await matchChannel(supabase, {
+    hotel_id: input.hotel_id,
     channel_identifier: input.channel_identifier,
     ref: input.ref,
     utm_source: input.utm_source,
   });
 
-  let channel: Channel | null = null;
-
-  if (lookupKeys.length > 0) {
-    const { data: channels, error: channelError } = await supabase
-      .from("channels")
-      .select(
-        "id, hotel_id, name, type, identifier_key, is_commissionable, commission_type, commission_value, created_at",
-      )
-      .in("identifier_key", lookupKeys);
-
-    if (channelError) {
-      console.error("[conversions] channel lookup failed", channelError);
-      return NextResponse.json(
-        { ok: false, error: "Database error during channel matching" },
-        { status: 500, headers },
-      );
-    }
-
-    const ranked = (channels ?? [])
-      .filter(
-        (row) => row.hotel_id === null || row.hotel_id === input.hotel_id,
-      )
-      .sort((a, b) => {
-        const ai = lookupKeys.indexOf(a.identifier_key);
-        const bi = lookupKeys.indexOf(b.identifier_key);
-        if (ai !== bi) return ai - bi;
-        // Prefer hotel-specific over global
-        if (a.hotel_id && !b.hotel_id) return -1;
-        if (!a.hotel_id && b.hotel_id) return 1;
-        return 0;
-      });
-
-    channel = (ranked[0] as Channel | undefined) ?? null;
+  if (matchError) {
+    console.error("[conversions] channel lookup failed", matchError);
+    return NextResponse.json(
+      { ok: false, error: "Database error during channel matching" },
+      { status: 500, headers },
+    );
   }
 
   const calculatedCommission = calculateCommission(input.booking_value, channel);
@@ -199,7 +148,6 @@ export async function POST(request: Request) {
     .single();
 
   if (insertError) {
-    // Race on unique transaction_id → treat as duplicate
     if (insertError.code === "23505") {
       const { data: raced } = await supabase
         .from("bookings")

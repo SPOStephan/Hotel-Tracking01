@@ -130,8 +130,26 @@
     };
     if (s.ref) s.channel_identifier = "ref=" + s.ref;
     else if (s.utm_source) s.channel_identifier = "utm_source=" + s.utm_source;
-    if (has) writeSession(s);
+    if (has) {
+      writeSession(s);
+      sendClick(s);
+    }
     return has ? s : prev || s;
+  }
+
+  function sendClick(session) {
+    if (!session || !(session.ref || session.utm_source || session.channel_identifier))
+      return;
+    return post(endpoint("/api/v1/clicks"), {
+      hotel_id: HGAE.config.hotelId || null,
+      visitor_id: session.visitor_id || visitorId(),
+      channel_identifier: session.channel_identifier || null,
+      ref: session.ref || null,
+      utm_source: session.utm_source || null,
+      utm_medium: session.utm_medium || null,
+      utm_campaign: session.utm_campaign || null,
+      landing_page_url: session.landing_page_url || location.href,
+    });
   }
 
   function num(v) {
@@ -279,6 +297,10 @@
       return HGAE;
     },
     getSession: readSession,
+    trackClick: function () {
+      var session = capture(true) || readSession();
+      return sendClick(session);
+    },
     trackPurchase: function (ecommerce) {
       return send(extract({ event: "purchase", ecommerce: ecommerce }));
     },

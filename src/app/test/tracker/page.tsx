@@ -10,6 +10,7 @@ declare global {
     dataLayer?: unknown[];
     HGAE?: {
       getSession?: () => Record<string, unknown> | null;
+      trackClick?: () => Promise<unknown>;
       trackPurchase?: (ecommerce: Record<string, unknown>) => Promise<unknown>;
       init?: (opts?: Record<string, unknown>) => unknown;
     };
@@ -64,6 +65,18 @@ export default function TrackerTestPage() {
     script.onerror = () => log("FEHLER: Tracker-Skript konnte nicht laden");
     document.body.appendChild(script);
   }, [log]);
+
+  async function simulateClick() {
+    setLastResult(null);
+    log("Sende Klick / Touchpoint …");
+    try {
+      const result = await window.HGAE?.trackClick?.();
+      setLastResult(result ?? null);
+      log(`Click-Antwort: ${JSON.stringify(result ?? null)}`);
+    } catch (error) {
+      log(`FEHLER: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   async function simulatePurchase() {
     setLastResult(null);
@@ -127,14 +140,24 @@ export default function TrackerTestPage() {
         <p>Status Tracker: {ready ? "bereit" : "lädt…"}</p>
       </div>
 
-      <button
-        type="button"
-        disabled={!ready}
-        onClick={simulatePurchase}
-        className="rounded-lg bg-zinc-900 px-5 py-3 text-left text-base font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
-      >
-        OPB-Kauf simulieren
-      </button>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          disabled={!ready}
+          onClick={simulateClick}
+          className="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-left text-base font-medium text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Klick / Touchpoint loggen
+        </button>
+        <button
+          type="button"
+          disabled={!ready}
+          onClick={simulatePurchase}
+          className="rounded-lg bg-zinc-900 px-5 py-3 text-left text-base font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
+        >
+          OPB-Kauf simulieren
+        </button>
+      </div>
 
       {lastResult != null ? (
         <pre className="overflow-x-auto rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-950">
@@ -155,9 +178,10 @@ export default function TrackerTestPage() {
       </section>
 
       <p className="text-sm text-zinc-500">
-        Danach in Supabase prüfen: Tabelle{" "}
-        <code className="rounded bg-zinc-100 px-1">bookings</code> — neue Zeile
-        mit <code className="rounded bg-zinc-100 px-1">OPB-TEST-…</code>
+        Danach in Supabase prüfen:{" "}
+        <code className="rounded bg-zinc-100 px-1">touchpoints</code> (Klicks)
+        bzw. <code className="rounded bg-zinc-100 px-1">bookings</code>{" "}
+        (Käufe).
       </p>
     </main>
   );

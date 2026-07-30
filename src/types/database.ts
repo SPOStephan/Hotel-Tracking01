@@ -1,3 +1,11 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export type OpbVersion = "v5" | "v6";
 
 export type ChannelType =
@@ -55,6 +63,156 @@ export type Booking = {
   nights_count: number | null;
   calculated_commission: number | null;
   status: BookingStatus;
-  raw_payload: Record<string, unknown>;
+  raw_payload: Json;
   created_at: string;
 };
+
+/** Supabase generated-style Database typing used by all clients. */
+export type Database = {
+  public: {
+    Tables: {
+      hotels: {
+        Row: Hotel;
+        Insert: {
+          id?: string;
+          name: string;
+          opb_version: OpbVersion;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          opb_version?: OpbVersion;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      channels: {
+        Row: Channel;
+        Insert: {
+          id?: string;
+          hotel_id?: string | null;
+          name: string;
+          type: ChannelType;
+          identifier_key: string;
+          is_commissionable?: boolean;
+          commission_type?: CommissionType | null;
+          commission_value?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          hotel_id?: string | null;
+          name?: string;
+          type?: ChannelType;
+          identifier_key?: string;
+          is_commissionable?: boolean;
+          commission_type?: CommissionType | null;
+          commission_value?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "channels_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      touchpoints: {
+        Row: Touchpoint;
+        Insert: {
+          id?: string;
+          channel_id: string;
+          visitor_id: string;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          landing_page_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          channel_id?: string;
+          visitor_id?: string;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          landing_page_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "touchpoints_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      bookings: {
+        Row: Booking;
+        Insert: {
+          id?: string;
+          hotel_id: string;
+          channel_id?: string | null;
+          visitor_id?: string | null;
+          transaction_id: string;
+          booking_value: number;
+          currency?: string;
+          arrival_date?: string | null;
+          departure_date?: string | null;
+          rooms_count?: number | null;
+          nights_count?: number | null;
+          calculated_commission?: number | null;
+          status?: BookingStatus;
+          raw_payload?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          hotel_id?: string;
+          channel_id?: string | null;
+          visitor_id?: string | null;
+          transaction_id?: string;
+          booking_value?: number;
+          currency?: string;
+          arrival_date?: string | null;
+          departure_date?: string | null;
+          rooms_count?: number | null;
+          nights_count?: number | null;
+          calculated_commission?: number | null;
+          status?: BookingStatus;
+          raw_payload?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookings_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
+
+/** Stable demo IDs (see supabase/seed.sql) — safe for docs & tracker tests. */
+export const DEMO_HOTEL_ID = "a0000000-0000-4000-8000-000000000001";

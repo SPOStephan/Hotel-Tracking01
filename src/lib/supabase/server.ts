@@ -1,18 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabasePublicEnv } from "@/lib/supabase/env";
+import type { Database } from "@/types/database";
 
 export async function createClient() {
   const cookieStore = await cookies();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const env = getSupabasePublicEnv();
 
-  if (!url || !anonKey) {
+  if (!env) {
     throw new Error(
       "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
     );
   }
 
-  return createServerClient(url, anonKey, {
+  return createServerClient<Database>(env.url, env.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -23,7 +24,7 @@ export async function createClient() {
             cookieStore.set(name, value, options);
           });
         } catch {
-          // Called from a Server Component — safe to ignore when middleware refreshes sessions.
+          // Called from a Server Component — middleware refreshes sessions.
         }
       },
     },

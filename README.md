@@ -2,100 +2,89 @@
 
 Universelle Multi-Channel Marketing Attribution & Commission Engine für Hotelgruppen.
 
-- **Influencer / Affiliates:** Tracking von Buchungen inkl. Provisionsberechnung  
-- **Interne Attribution:** Umsatzmessung über KI-Chat, Newsletter, Ads, Organic  
-- **Buchungsstrecke:** OnePageBooking (OPB) v5 & v6  
+**Hosting-Modell:** Code in **GitHub** → Deploy auf **Vercel** → Daten in **deinem Supabase-Projekt**.  
+Keine Cursor-eigene Datenbank.
 
 ## Stack
 
-| Schicht | Technologie |
-|--------|-------------|
-| App | Next.js (App Router, TypeScript) |
-| Hosting | Vercel (inkl. Edge / Custom Domain) |
-| Datenbank & Auth | Supabase (PostgreSQL, RLS) |
-| UI (später) | Tailwind CSS + shadcn/ui / Tremor |
-| Tracker | `public/hgae-tracker.js` (Vanilla JS, &lt;5KB) |
+| Schicht | Technologie | Besitz |
+|--------|-------------|--------|
+| Code | GitHub | dein Repo |
+| App / API / Tracker | Vercel | dein Account |
+| Domain + SSL | Vercel Custom Domain | deine Domain |
+| DB + Auth | Supabase PostgreSQL | **dein** Projekt |
 
-## Schnellstart
+## Setup (einmalig)
 
-```bash
-cp .env.example .env.local
-# NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
-# SUPABASE_SERVICE_ROLE_KEY setzen
+### 1. Vercel Environment Variables
 
-npm install
-npm run dev
-```
+Bereits erledigt, falls gesetzt:
 
-### Datenbank-Migration
+- `NEXT_PUBLIC_SUPABASE_URL` = `https://lkqopssstvtekneycpgh.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-SQL-Migration liegt unter:
+### 2. Schema in Supabase anlegen (ein Klick im SQL Editor)
 
-`supabase/migrations/20260730000001_initial_schema.sql`
+1. Öffne: [SQL Editor](https://supabase.com/dashboard/project/lkqopssstvtekneycpgh/sql/new)
+2. Inhalt von [`supabase/APPLY_IN_DASHBOARD.sql`](./supabase/APPLY_IN_DASHBOARD.sql) einfügen
+3. **Run**
 
-Im Supabase SQL Editor ausführen oder per Supabase CLI:
+Das legt Tabellen, RLS, Grants und Demo-Hotel/Channels an.
 
-```bash
-npx supabase db push
-```
+### 3. GitHub → Vercel deployen
+
+Repo mit Vercel verbinden (Root = Projektroot). Nach dem Deploy prüfen:
+
+- Startseite zeigt **Supabase-Status**
+- oder `GET /api/v1/health` → `"ok": true`
+
+### 4. Custom Domain (später)
+
+Vercel → Domains → deine Domain hinzufügen (Auto-SSL).
 
 ## API
 
-### `POST /api/v1/conversions`
+| Route | Zweck |
+|-------|--------|
+| `GET /api/v1/health` | Env + DB-Erreichbarkeit |
+| `POST /api/v1/conversions` | Buchungen vom Tracker |
 
-Empfängt OPB-Kaufabschlüsse vom Tracker.
+Demo-Hotel-ID (nach Seed): `a0000000-0000-4000-8000-000000000001`
 
-- Deduplizierung über `transaction_id`
-- Channel-Matching über `ref=` / `utm_source=` / `channel_identifier`
-- Provisionsberechnung bei `is_commissionable`
-
-Beispiel-Body:
-
-```json
-{
-  "hotel_id": "00000000-0000-0000-0000-000000000000",
-  "transaction_id": "OPB-12345",
-  "booking_value": 420.5,
-  "currency": "EUR",
-  "visitor_id": "v_abc123",
-  "ref": "max123",
-  "utm_source": null,
-  "arrival_date": "2026-08-01",
-  "departure_date": "2026-08-03",
-  "rooms_count": 1,
-  "nights_count": 2,
-  "raw_payload": {}
-}
-```
-
-## Tracker einbinden
-
-Quellcode: `src/tracker/hgae-tracker.js` → Build: `npm run build:tracker` → `public/hgae-tracker.js` (~5KB).
+## Tracker
 
 ```html
 <script
-  src="https://analytics.eure-hotelgruppe.de/hgae-tracker.js"
-  data-hotel-id="YOUR-HOTEL-UUID"
-  data-api-base="https://analytics.eure-hotelgruppe.de"
+  src="https://DEINE-VERCEL-DOMAIN/hgae-tracker.js"
+  data-hotel-id="a0000000-0000-4000-8000-000000000001"
+  data-api-base="https://DEINE-VERCEL-DOMAIN"
   async
 ></script>
 ```
 
-Das Skript:
+Quelle: `src/tracker/hgae-tracker.js` → Build: `npm run build:tracker` → `public/hgae-tracker.js`
 
-1. liest `?ref=` (Prio 1) bzw. UTMs (Prio 2),
-2. speichert eine 30-Tage-Session (`hgae_session`) in Cookie + LocalStorage,
-3. dekoriert Links zu `onepagebooking.com`,
-4. horcht auf `dataLayer` `purchase`-Events und POSTet an `/api/v1/conversions`.
-5. akzeptiert OPB v5 (`value` als String) und v6 (`value` als Number).
+## Lokal entwickeln (optional)
 
-## Projektstruktur (Kern)
+Nur nötig auf deinem Rechner — **nicht** für Vercel:
+
+```bash
+cp .env.example .env.local
+# Keys aus Vercel / Supabase Dashboard eintragen
+npm install
+npm run dev
+```
+
+## Projektstruktur
 
 ```
 src/app/api/v1/conversions/   # Conversion API
-src/lib/conversions/          # Zod-Validierung & Provision
-src/lib/supabase/             # Browser / SSR / Admin Clients
-supabase/migrations/          # PostgreSQL Schema + RLS
+src/app/api/v1/health/        # Connectivity check
+src/lib/supabase/             # Env, Clients, Health, Middleware
+supabase/migrations/          # Versionierte SQL-Migrationen
+supabase/APPLY_IN_DASHBOARD.sql  # Einmal-Apply im Dashboard
+supabase/seed.sql             # Demo-Daten
 public/hgae-tracker.js        # Client Tracker
 ```
 
@@ -103,4 +92,4 @@ public/hgae-tracker.js        # Client Tracker
 
 - `POST /api/v1/clicks` — Touchpoint-Logging  
 - `POST /api/v1/chat-link` — getaggte KI-Chat-Links  
-- Management-Dashboard (ROI, Hotel-Vergleich, Partner-Portal, CSV-Abgleich)  
+- Management-Dashboard / Partner-Portal / CSV-Abgleich  

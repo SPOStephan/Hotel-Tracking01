@@ -2,8 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refreshes the Supabase Auth session cookie on each request.
- * Required once dashboard login is enabled; harmless before that.
+ * Refreshes Supabase Auth session and protects /dashboard routes.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -32,8 +31,27 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Touches auth so expired sessions are refreshed.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  const isDashboard = path.startsWith("/dashboard");
+  const isLogin = path.startsWith("/login");
+
+  if (isDashboard && !user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.searchParams.set("next", path);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (isLogin && user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/dashboard";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return supabaseResponse;
 }

@@ -90,6 +90,6 @@ public/hgae-tracker.js        # Client Tracker
 
 ## Nächste Schritte
 
-- `POST /api/v1/clicks` — Touchpoint-Logging  
-- `POST /api/v1/chat-link` — getaggte KI-Chat-Links  
-- Management-Dashboard / Partner-Portal / CSV-Abgleich  
+- `POST /api/v1/chat-link` — getaggte KI-Chat-Links (wenn Chatbot existiert)  
+- Partner-Portal / CSV-Abgleich  
+- Dashboard: https://DEINE-DOMAIN/dashboard (Login via Supabase Auth)  

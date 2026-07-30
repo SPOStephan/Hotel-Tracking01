@@ -77,6 +77,14 @@ export default async function HomePage() {
             supabase/APPLY_IN_DASHBOARD.sql
           </code>
         </li>
+        <li>
+          <a
+            href="/test/tracker?ref=max123"
+            className="font-medium text-zinc-900 underline underline-offset-2"
+          >
+            Tracker-Testseite öffnen
+          </a>
+        </li>
       </ul>
     </main>
   );

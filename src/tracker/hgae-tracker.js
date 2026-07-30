@@ -180,7 +180,8 @@
 
   function post(url, payload) {
     var body = JSON.stringify(payload);
-    if (navigator.sendBeacon) {
+    // sendBeacon is great for production page-unload; skip in debug so callers get JSON.
+    if (!HGAE.config.debug && navigator.sendBeacon) {
       try {
         if (navigator.sendBeacon(url, new Blob([body], { type: "application/json" })))
           return Promise.resolve({ ok: true });

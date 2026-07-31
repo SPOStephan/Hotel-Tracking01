@@ -93,6 +93,14 @@ export default async function HomePage() {
         </li>
         <li>
           <a
+            href="/partner"
+            className="font-medium text-zinc-900 underline underline-offset-2"
+          >
+            Partner-Portal öffnen
+          </a>
+        </li>
+        <li>
+          <a
             href="/test/tracker?ref=max123"
             className="font-medium text-zinc-900 underline underline-offset-2"
           >

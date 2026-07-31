@@ -1,12 +1,13 @@
 "use server";
 
+import { resolvePostLoginPath } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/dashboard");
+  const next = String(formData.get("next") ?? "");
 
   if (!email || !password) {
     redirect(`/login?error=${encodeURIComponent("E-Mail und Passwort nötig")}`);
@@ -19,7 +20,8 @@ export async function loginAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect(next.startsWith("/") ? next : "/dashboard");
+  const destination = await resolvePostLoginPath(next || null);
+  redirect(destination);
 }
 
 export async function logoutAction() {

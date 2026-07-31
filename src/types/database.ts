@@ -67,6 +67,13 @@ export type Booking = {
   created_at: string;
 };
 
+export type PartnerProfile = {
+  id: string;
+  user_id: string;
+  channel_id: string;
+  created_at: string;
+};
+
 /** Supabase generated-style Database typing used by all clients. */
 export type Database = {
   public: {
@@ -117,6 +124,30 @@ export type Database = {
             columns: ["hotel_id"];
             isOneToOne: false;
             referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      partner_profiles: {
+        Row: PartnerProfile;
+        Insert: {
+          id?: string;
+          user_id: string;
+          channel_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          channel_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partner_profiles_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
             referencedColumns: ["id"];
           },
         ];
@@ -216,3 +247,5 @@ export type Database = {
 
 /** Stable demo IDs (see supabase/seed.sql) — safe for docs & tracker tests. */
 export const DEMO_HOTEL_ID = "a0000000-0000-4000-8000-000000000001";
+export const DEMO_INFLUENCER_CHANNEL_ID =
+  "b0000000-0000-4000-8000-000000000001";

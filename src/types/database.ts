@@ -74,6 +74,14 @@ export type PartnerProfile = {
   created_at: string;
 };
 
+export type AppSetting = {
+  key: string;
+  value_bool: boolean;
+  updated_at: string;
+};
+
+export const SETTING_CSV_RECONCILIATION = "csv_reconciliation_enabled";
+
 /** Supabase generated-style Database typing used by all clients. */
 export type Database = {
   public: {
@@ -151,6 +159,20 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      app_settings: {
+        Row: AppSetting;
+        Insert: {
+          key: string;
+          value_bool?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          value_bool?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       touchpoints: {
         Row: Touchpoint;

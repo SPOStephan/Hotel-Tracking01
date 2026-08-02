@@ -1,12 +1,12 @@
 "use server";
 
-import { isPartnerUser } from "@/lib/auth/roles";
+import { isStaffUser } from "@/lib/auth/roles";
 import { setCsvReconciliationEnabled } from "@/lib/settings/app-settings";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function toggleCsvReconciliationAction(formData: FormData) {
-  if (await isPartnerUser()) {
+  if (!(await isStaffUser())) {
     redirect("/partner");
   }
 

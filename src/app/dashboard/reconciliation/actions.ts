@@ -1,6 +1,6 @@
 "use server";
 
-import { isPartnerUser } from "@/lib/auth/roles";
+import { isStaffUser } from "@/lib/auth/roles";
 import { parseReconciliationCsv } from "@/lib/dashboard/csv";
 import { isCsvReconciliationEnabled } from "@/lib/settings/app-settings";
 import { createClient } from "@/lib/supabase/server";
@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function importReconciliationCsvAction(formData: FormData) {
-  if (await isPartnerUser()) {
+  if (!(await isStaffUser())) {
     redirect("/partner");
   }
 

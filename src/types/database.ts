@@ -78,6 +78,11 @@ export type PartnerProfile = {
   created_at: string;
 };
 
+export type StaffProfile = {
+  user_id: string;
+  created_at: string;
+};
+
 export type AppSetting = {
   key: string;
   value_bool: boolean;
@@ -171,6 +176,18 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      staff_profiles: {
+        Row: StaffProfile;
+        Insert: {
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       app_settings: {
         Row: AppSetting;

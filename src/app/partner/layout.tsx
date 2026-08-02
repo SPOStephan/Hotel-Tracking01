@@ -1,4 +1,5 @@
 import { logoutAction } from "@/app/login/actions";
+import { isStaffUser } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
@@ -13,6 +14,7 @@ export default async function PartnerLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const staff = await isStaffUser();
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
@@ -28,8 +30,23 @@ export default async function PartnerLayout({
             Deine Links, Buchungen und Provisionen
             {user?.email ? ` · ${user.email}` : null}
           </p>
+          {!staff ? (
+            <p className="max-w-xl text-sm text-muted">
+              Das ist die Ansicht für einen einzelnen Partner — nicht die
+              Admin-Übersicht der Hotelgruppe. Admin: abmelden und mit dem
+              Staff-Account unter /dashboard/partners einloggen.
+            </p>
+          ) : null}
         </div>
         <nav className="flex items-center gap-4 text-sm">
+          {staff ? (
+            <Link
+              href="/dashboard/partners"
+              className="font-medium underline-offset-2 hover:underline"
+            >
+              Admin: Partner
+            </Link>
+          ) : null}
           <Link
             href="/partner"
             className="font-medium underline-offset-2 hover:underline"

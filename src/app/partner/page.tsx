@@ -11,6 +11,20 @@ export default async function PartnerPage() {
     redirect("/login");
   }
 
+  if (data.inactive) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Zugang deaktiviert
+        </h2>
+        <p className="max-w-xl text-sm text-muted">
+          Dein Partner-Zugang ist derzeit nicht freigeschaltet. Bitte melde dich
+          bei der Hotelgruppe, wenn du denkst, dass das ein Fehler ist.
+        </p>
+      </div>
+    );
+  }
+
   const commissionLabel = data.channel.is_commissionable
     ? data.channel.commission_type === "percentage"
       ? `${data.channel.commission_value}\u00A0%`

@@ -72,6 +72,9 @@ export type PartnerProfile = {
   id: string;
   user_id: string;
   channel_id: string;
+  is_active: boolean;
+  email: string | null;
+  display_name: string | null;
   created_at: string;
 };
 
@@ -145,12 +148,18 @@ export type Database = {
           id?: string;
           user_id: string;
           channel_id: string;
+          is_active?: boolean;
+          email?: string | null;
+          display_name?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
           channel_id?: string;
+          is_active?: boolean;
+          email?: string | null;
+          display_name?: string | null;
           created_at?: string;
         };
         Relationships: [

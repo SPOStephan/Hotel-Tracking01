@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { BookingStatus, Channel, CommissionType } from "@/types/database";
 
 export type PartnerPortalData = {
+  inactive: boolean;
   channel: Channel;
   hotelName: string | null;
   totals: {
@@ -42,12 +43,14 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
 
   const { data: profiles } = await supabase
     .from("partner_profiles")
-    .select("channel_id")
+    .select("channel_id, is_active")
     .eq("user_id", user.id)
     .limit(1);
 
-  const channelId = profiles?.[0]?.channel_id;
-  if (!channelId) return null;
+  const profile = profiles?.[0];
+  if (!profile) return null;
+
+  const channelId = profile.channel_id;
 
   const { data: channel } = await supabase
     .from("channels")
@@ -67,6 +70,25 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
       .eq("id", channel.hotel_id)
       .maybeSingle();
     hotelName = hotel?.name ?? null;
+  }
+
+  if (!profile.is_active) {
+    return {
+      inactive: true,
+      channel: {
+        ...channel,
+        commission_type: channel.commission_type as CommissionType | null,
+      },
+      hotelName,
+      totals: {
+        bookings_count: 0,
+        revenue: 0,
+        commission: 0,
+        touchpoints_count: 0,
+      },
+      bookings: [],
+      refParam: extractRef(channel.identifier_key),
+    };
   }
 
   const { data: bookings } = await supabase
@@ -93,6 +115,7 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
   }
 
   return {
+    inactive: false,
     channel: {
       ...channel,
       commission_type: channel.commission_type as CommissionType | null,

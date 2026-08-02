@@ -42,6 +42,12 @@ export default async function DashboardLayout({
           >
             Hotels
           </Link>
+          <Link
+            href="/dashboard/partners"
+            className="font-medium underline-offset-2 hover:underline"
+          >
+            Partner
+          </Link>
           {csvEnabled ? (
             <Link
               href="/dashboard/reconciliation"

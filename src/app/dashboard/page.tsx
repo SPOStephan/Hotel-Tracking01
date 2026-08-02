@@ -35,6 +35,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             {metrics.hotels.map((hotel) => (
               <option key={hotel.id} value={hotel.id}>
                 {hotel.name}
+                {hotel.opb_hotel_id ? ` (${hotel.opb_hotel_id})` : ""}
               </option>
             ))}
           </select>

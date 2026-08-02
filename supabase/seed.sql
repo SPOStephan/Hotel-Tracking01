@@ -1,16 +1,31 @@
 -- Demo seed for HGAE (safe to re-run: upserts by fixed IDs / identifier_key)
 -- Demo hotel UUID is also exported as DEMO_HOTEL_ID in the app.
 
-insert into public.hotels (id, name, opb_version)
+insert into public.hotels (id, name, opb_version, opb_hotel_id)
 values (
   'a0000000-0000-4000-8000-000000000001',
   'Boutique Hotel Seaside',
-  'v6'
+  'v6',
+  'demo-seaside'
 )
 on conflict (id) do update
 set
   name = excluded.name,
-  opb_version = excluded.opb_version;
+  opb_version = excluded.opb_version,
+  opb_hotel_id = excluded.opb_hotel_id;
+
+insert into public.hotels (id, name, opb_version, opb_hotel_id)
+values (
+  'a0000000-0000-4000-8000-000000000002',
+  'Lohbeck Ambassador',
+  'v6',
+  'lohbeckambassador'
+)
+on conflict (id) do update
+set
+  name = excluded.name,
+  opb_version = excluded.opb_version,
+  opb_hotel_id = excluded.opb_hotel_id;
 
 insert into public.channels (
   id,

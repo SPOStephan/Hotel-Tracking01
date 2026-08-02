@@ -38,8 +38,15 @@ const optionalNonNegativeInt = z
     return parsed;
   });
 
+/** Internal UUID or OnePageBooking hotel id/slug (e.g. lohbeckambassador). */
+const hotelRefSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120);
+
 export const conversionRequestSchema = z.object({
-  hotel_id: z.uuid(),
+  hotel_id: hotelRefSchema,
   transaction_id: z.string().trim().min(1).max(200),
   booking_value: bookingValueSchema,
   currency: z

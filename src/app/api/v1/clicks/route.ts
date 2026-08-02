@@ -1,6 +1,7 @@
 import { corsHeaders, corsOptionsResponse } from "@/lib/api/cors";
 import { matchChannel } from "@/lib/channels/match";
 import { clickRequestSchema } from "@/lib/clicks/schema";
+import { resolveHotel } from "@/lib/hotels/resolve";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
@@ -62,8 +63,33 @@ export async function POST(request: Request) {
     );
   }
 
+  let resolvedHotelId: string | null = null;
+  if (input.hotel_id) {
+    const { hotel, error: hotelError } = await resolveHotel(
+      supabase,
+      input.hotel_id,
+    );
+    if (hotelError) {
+      console.error("[clicks] hotel lookup failed", hotelError);
+      return NextResponse.json(
+        { ok: false, error: "Database error during hotel lookup" },
+        { status: 500, headers },
+      );
+    }
+    if (!hotel) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Unknown hotel_id (use internal UUID or OPB hotel id)",
+        },
+        { status: 404, headers },
+      );
+    }
+    resolvedHotelId = hotel.id;
+  }
+
   const { channel, error: matchError } = await matchChannel(supabase, {
-    hotel_id: input.hotel_id,
+    hotel_id: resolvedHotelId,
     channel_identifier: input.channel_identifier,
     ref: input.ref,
     utm_source: input.utm_source,

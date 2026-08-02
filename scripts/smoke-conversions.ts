@@ -8,9 +8,9 @@ function assert(cond: unknown, msg: string) {
   if (!cond) throw new Error(msg);
 }
 
-// OPB v5 string value
+// OPB v5 string value + OPB hotel slug
 const v5 = conversionRequestSchema.safeParse({
-  hotel_id: "11111111-1111-4111-8111-111111111111",
+  hotel_id: "lohbeckambassador",
   transaction_id: "OPB-1",
   booking_value: "199,50",
   ref: "max123",
@@ -18,9 +18,10 @@ const v5 = conversionRequestSchema.safeParse({
 assert(v5.success, "v5 parse should succeed");
 if (v5.success) {
   assert(v5.data.booking_value === 199.5, "v5 value coercion");
+  assert(v5.data.hotel_id === "lohbeckambassador", "opb hotel slug accepted");
 }
 
-// OPB v6 number
+// OPB v6 number + UUID hotel ref still ok
 const v6 = conversionRequestSchema.safeParse({
   hotel_id: "11111111-1111-4111-8111-111111111111",
   transaction_id: "OPB-2",

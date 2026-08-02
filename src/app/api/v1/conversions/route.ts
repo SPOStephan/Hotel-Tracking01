@@ -2,6 +2,7 @@ import { corsHeaders, corsOptionsResponse } from "@/lib/api/cors";
 import { matchChannel } from "@/lib/channels/match";
 import { calculateCommission } from "@/lib/conversions/calculate-commission";
 import { conversionRequestSchema } from "@/lib/conversions/schema";
+import { resolveHotel } from "@/lib/hotels/resolve";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
@@ -76,11 +77,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: hotel, error: hotelError } = await supabase
-    .from("hotels")
-    .select("id")
-    .eq("id", input.hotel_id)
-    .maybeSingle();
+  const { hotel, error: hotelError } = await resolveHotel(
+    supabase,
+    input.hotel_id,
+  );
 
   if (hotelError) {
     console.error("[conversions] hotel lookup failed", hotelError);
@@ -92,13 +92,16 @@ export async function POST(request: Request) {
 
   if (!hotel) {
     return NextResponse.json(
-      { ok: false, error: "Unknown hotel_id" },
+      {
+        ok: false,
+        error: "Unknown hotel_id (use internal UUID or OPB hotel id)",
+      },
       { status: 404, headers },
     );
   }
 
   const { channel, error: matchError } = await matchChannel(supabase, {
-    hotel_id: input.hotel_id,
+    hotel_id: hotel.id,
     channel_identifier: input.channel_identifier,
     ref: input.ref,
     utm_source: input.utm_source,
@@ -115,7 +118,7 @@ export async function POST(request: Request) {
   const calculatedCommission = calculateCommission(input.booking_value, channel);
 
   const insertPayload = {
-    hotel_id: input.hotel_id,
+    hotel_id: hotel.id,
     channel_id: channel?.id ?? null,
     visitor_id: input.visitor_id ?? null,
     transaction_id: input.transaction_id,

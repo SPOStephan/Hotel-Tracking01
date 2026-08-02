@@ -1,7 +1,5 @@
-import {
-  createHotelAction,
-  updateHotelAction,
-} from "@/app/dashboard/hotels/actions";
+import { createHotelAction } from "@/app/dashboard/hotels/actions";
+import { HotelList } from "@/app/dashboard/hotels/hotel-list";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +20,21 @@ export default async function HotelsPage({ searchParams }: PageProps) {
     .select("id, name, opb_version, opb_hotel_id, created_at")
     .order("name");
 
+  const rows = (hotels ?? []).map((hotel) => ({
+    id: hotel.id,
+    name: hotel.name,
+    opb_version: hotel.opb_version,
+    opb_hotel_id: hotel.opb_hotel_id,
+  }));
+
   return (
     <div className="space-y-10">
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Hotels</h2>
         <p className="max-w-2xl text-sm text-muted">
-          Anzeigename und OPB-Hotel-ID sind unabhängig. Die OPB-ID kommt in den
-          Tracker-Embed (<code>data-hotel-id</code>). Version kannst du bei
-          einem OPB-Upgrade jederzeit von v5 auf v6 umstellen.
+          Anzeigename und OPB-Hotel-ID sind unabhängig. Zum Ändern eines
+          bestehenden Hotels auf <strong>Bearbeiten</strong> klicken, Werte
+          anpassen und <strong>Änderungen speichern</strong>.
         </p>
       </div>
 
@@ -41,7 +46,15 @@ export default async function HotelsPage({ searchParams }: PageProps) {
       ) : null}
 
       <section className="space-y-4">
-        <h3 className="font-medium">Neues Hotel</h3>
+        <h3 className="font-medium">Vorhandene Hotels</h3>
+        <HotelList hotels={rows} appBase={APP_BASE} />
+      </section>
+
+      <section className="space-y-4 border-t border-line pt-8">
+        <h3 className="font-medium">Neues Hotel anlegen</h3>
+        <p className="text-sm text-muted">
+          Nur für Hotels, die noch nicht in der Liste stehen.
+        </p>
         <form
           action={createHotelAction}
           className="grid max-w-xl gap-3 sm:grid-cols-2"
@@ -52,7 +65,7 @@ export default async function HotelsPage({ searchParams }: PageProps) {
               name="name"
               required
               className="w-full rounded-lg border border-line bg-panel px-3 py-2"
-              placeholder="Hotel Lohbeck Ambassador Düsseldorf"
+              placeholder="Anzeigename im Dashboard"
             />
           </label>
           <label className="block space-y-1.5 text-sm sm:col-span-2">
@@ -87,83 +100,6 @@ export default async function HotelsPage({ searchParams }: PageProps) {
             </button>
           </div>
         </form>
-      </section>
-
-      <section className="space-y-6">
-        <h3 className="font-medium">Vorhandene Hotels</h3>
-        {(hotels ?? []).length === 0 ? (
-          <p className="text-sm text-muted">Noch keine Hotels.</p>
-        ) : (
-          <ul className="space-y-8">
-            {(hotels ?? []).map((hotel) => {
-              const hotelKey = hotel.opb_hotel_id || hotel.id;
-              const embed = `<script
-  src="${APP_BASE}/hgae-tracker.js"
-  data-hotel-id="${hotelKey}"
-  data-api-base="${APP_BASE}"
-  async
-></script>`;
-
-              return (
-                <li
-                  key={hotel.id}
-                  className="space-y-4 border-t border-line pt-4"
-                >
-                  <form
-                    action={updateHotelAction}
-                    className="grid max-w-xl gap-3 sm:grid-cols-2"
-                  >
-                    <input type="hidden" name="id" value={hotel.id} />
-                    <label className="block space-y-1.5 text-sm sm:col-span-2">
-                      <span className="font-medium">Anzeigename</span>
-                      <input
-                        name="name"
-                        required
-                        defaultValue={hotel.name}
-                        className="w-full rounded-lg border border-line bg-panel px-3 py-2"
-                      />
-                    </label>
-                    <label className="block space-y-1.5 text-sm sm:col-span-2">
-                      <span className="font-medium">OPB-Hotel-ID</span>
-                      <input
-                        name="opb_hotel_id"
-                        required
-                        defaultValue={hotel.opb_hotel_id ?? ""}
-                        className="w-full rounded-lg border border-line bg-panel px-3 py-2 font-mono text-sm"
-                      />
-                    </label>
-                    <label className="block space-y-1.5 text-sm">
-                      <span className="font-medium">OPB-Version</span>
-                      <select
-                        name="opb_version"
-                        defaultValue={hotel.opb_version}
-                        className="w-full rounded-lg border border-line bg-panel px-3 py-2"
-                      >
-                        <option value="v6">v6</option>
-                        <option value="v5">v5</option>
-                      </select>
-                    </label>
-                    <div className="flex items-end">
-                      <button
-                        type="submit"
-                        className="rounded-lg border border-line bg-panel px-4 py-2 text-sm font-medium"
-                      >
-                        Änderungen speichern
-                      </button>
-                    </div>
-                  </form>
-
-                  <div className="space-y-1.5 text-sm">
-                    <p className="font-medium">Embed-Code</p>
-                    <pre className="overflow-x-auto rounded-lg border border-line bg-panel p-3 text-xs whitespace-pre-wrap">
-                      {embed}
-                    </pre>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </section>
     </div>
   );

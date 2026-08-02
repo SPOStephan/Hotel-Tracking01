@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refreshes Supabase Auth session and protects /dashboard routes.
+ * Refreshes Supabase Auth session and protects /dashboard + /partner.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -37,20 +37,45 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isDashboard = path.startsWith("/dashboard");
+  const isPartner = path.startsWith("/partner");
   const isLogin = path.startsWith("/login");
 
-  if (isDashboard && !user) {
+  if ((isDashboard || isPartner) && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", path);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isLogin && user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+  if (user && (isDashboard || isPartner || isLogin)) {
+    const { data: profiles } = await supabase
+      .from("partner_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    const isPartnerUser = (profiles?.length ?? 0) > 0;
+
+    if (isLogin) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = isPartnerUser ? "/partner" : "/dashboard";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (isPartnerUser && isDashboard) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/partner";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (!isPartnerUser && isPartner) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/dashboard";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return supabaseResponse;

@@ -1,11 +1,17 @@
+import { toggleCsvReconciliationAction } from "@/app/dashboard/actions";
 import { format } from "@/lib/dashboard/format";
 import { getDashboardMetrics } from "@/lib/dashboard/metrics";
+import { isCsvReconciliationEnabled } from "@/lib/settings/app-settings";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ hotel?: string }>;
+  searchParams: Promise<{
+    hotel?: string;
+    settings?: string;
+    settings_error?: string;
+  }>;
 };
 
 export default async function DashboardPage({ searchParams }: PageProps) {
@@ -13,6 +19,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const hotelId = params.hotel?.trim() || null;
   const metrics = await getDashboardMetrics(hotelId);
   const maxRevenue = Math.max(...metrics.byChannel.map((r) => r.revenue), 1);
+  const csvEnabled = await isCsvReconciliationEnabled();
 
   return (
     <div className="space-y-10">
@@ -44,6 +51,59 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </Link>
         ) : null}
       </form>
+
+      <section className="space-y-3 border-t border-line pt-6">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Einstellungen</h2>
+          <p className="text-sm text-muted">
+            Optionale Module — standardmäßig aus, bis ihr PMS-Daten zuverlässig
+            einspielt.
+          </p>
+        </div>
+        {params.settings_error ? (
+          <p className="text-sm text-red-700">{params.settings_error}</p>
+        ) : null}
+        {params.settings === "csv_on" ? (
+          <p className="text-sm text-emerald-800">CSV-Abgleich ist eingeschaltet.</p>
+        ) : null}
+        {params.settings === "csv_off" ? (
+          <p className="text-sm text-muted">CSV-Abgleich ist ausgeschaltet.</p>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1 text-sm">
+            <p className="font-medium">CSV-Abgleich (PMS)</p>
+            <p className="text-muted">
+              Status:{" "}
+              <span className={csvEnabled ? "text-emerald-800" : ""}>
+                {csvEnabled ? "aktiv" : "aus"}
+              </span>
+            </p>
+          </div>
+          <form action={toggleCsvReconciliationAction}>
+            <input
+              type="hidden"
+              name="enabled"
+              value={csvEnabled ? "false" : "true"}
+            />
+            <button
+              type="submit"
+              className="rounded-lg border border-line bg-panel px-4 py-2 text-sm font-medium"
+            >
+              {csvEnabled ? "CSV-Abgleich ausschalten" : "CSV-Abgleich einschalten"}
+            </button>
+          </form>
+        </div>
+        {csvEnabled ? (
+          <p className="text-sm">
+            <Link
+              href="/dashboard/reconciliation"
+              className="font-medium underline underline-offset-2"
+            >
+              Zum CSV-Abgleich →
+            </Link>
+          </p>
+        ) : null}
+      </section>
 
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Umsatz" value={format.eur(metrics.totals.revenue)} />

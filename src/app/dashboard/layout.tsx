@@ -1,4 +1,5 @@
 import { logoutAction } from "@/app/login/actions";
+import { isCsvReconciliationEnabled } from "@/lib/settings/app-settings";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
@@ -13,6 +14,7 @@ export default async function DashboardLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const csvEnabled = await isCsvReconciliationEnabled();
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10">
@@ -28,14 +30,31 @@ export default async function DashboardLayout({
           </p>
         </div>
         <nav className="flex items-center gap-4 text-sm">
-          <Link href="/dashboard" className="font-medium underline-offset-2 hover:underline">
+          <Link
+            href="/dashboard"
+            className="font-medium underline-offset-2 hover:underline"
+          >
             Übersicht
           </Link>
-          <Link href="/" className="text-muted underline-offset-2 hover:underline">
+          {csvEnabled ? (
+            <Link
+              href="/dashboard/reconciliation"
+              className="font-medium underline-offset-2 hover:underline"
+            >
+              CSV-Abgleich
+            </Link>
+          ) : null}
+          <Link
+            href="/"
+            className="text-muted underline-offset-2 hover:underline"
+          >
             Status
           </Link>
           <form action={logoutAction}>
-            <button type="submit" className="text-muted underline-offset-2 hover:underline">
+            <button
+              type="submit"
+              className="text-muted underline-offset-2 hover:underline"
+            >
               Abmelden
             </button>
           </form>

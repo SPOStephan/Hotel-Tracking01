@@ -4,6 +4,7 @@ import type { BookingStatus, ChannelType } from "@/types/database";
 export type DashboardHotel = {
   id: string;
   name: string;
+  opb_hotel_id: string | null;
 };
 
 export type ChannelBreakdownRow = {
@@ -51,7 +52,7 @@ export async function getDashboardMetrics(
 
   const { data: hotels } = await supabase
     .from("hotels")
-    .select("id, name")
+    .select("id, name, opb_hotel_id")
     .order("name");
 
   let bookingsQuery = supabase

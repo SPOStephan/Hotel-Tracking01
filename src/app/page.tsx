@@ -1,5 +1,4 @@
 import { checkHealth } from "@/lib/supabase/health";
-import { DEMO_HOTEL_ID } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -72,10 +71,15 @@ export default async function HomePage() {
           — Buchungs-Ingestion
         </li>
         <li>
-          Demo-Hotel-ID:{" "}
+          Demo / OPB-Hotel-IDs:{" "}
           <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-800">
-            {DEMO_HOTEL_ID}
+            lohbeckambassador
           </code>
+          ,{" "}
+          <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-800">
+            demo-seaside
+          </code>{" "}
+          <span className="text-zinc-400">(intern auch UUID ok)</span>
         </li>
         <li>
           Schema einmalig:{" "}

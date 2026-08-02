@@ -1,6 +1,6 @@
 "use client";
 
-import { DEMO_HOTEL_ID } from "@/types/database";
+import { DEMO_HOTEL_OPB_ID } from "@/types/database";
 import { useCallback, useEffect, useState } from "react";
 
 type LogLine = { at: string; text: string };
@@ -52,7 +52,7 @@ export default function TrackerTestPage() {
     script.src = "/hgae-tracker.js";
     script.async = true;
     script.dataset.hgaeTest = "1";
-    script.dataset.hotelId = DEMO_HOTEL_ID;
+    script.dataset.hotelId = DEMO_HOTEL_OPB_ID;
     script.dataset.apiBase = window.location.origin;
     script.dataset.debug = "true";
     script.onload = () => {
@@ -130,7 +130,7 @@ export default function TrackerTestPage() {
       <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
         <p>
           Hotel-ID:{" "}
-          <code className="rounded bg-white px-1.5 py-0.5">{DEMO_HOTEL_ID}</code>
+          <code className="rounded bg-white px-1.5 py-0.5">{DEMO_HOTEL_OPB_ID}</code>
         </p>
         <p>
           Ref:{" "}

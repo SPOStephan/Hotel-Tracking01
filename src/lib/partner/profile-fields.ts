@@ -43,10 +43,12 @@ export function parseHotelScope(formData: FormData): {
   hotelId: string | null;
   error: string | null;
 } {
-  const allHotels = formData.get("all_hotels") === "on";
+  const allHotels =
+    formData.get("all_hotels") === "on" ||
+    formData.get("all_hotels") === "true";
   const hotelId = String(formData.get("hotel_id") ?? "").trim();
 
-  if (allHotels) {
+  if (allHotels || hotelId === "__all__") {
     return { allHotels: true, hotelId: null, error: null };
   }
   if (!hotelId) {

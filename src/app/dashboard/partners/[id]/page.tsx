@@ -97,7 +97,6 @@ export default async function PartnerDetailPage({
             hotels={hotels ?? []}
             defaultAllHotels={partner.all_hotels}
             defaultHotelId={partner.hotel_id ?? ""}
-            idPrefix="edit-partner"
           />
 
           <label className="block space-y-1.5 text-sm sm:col-span-2">

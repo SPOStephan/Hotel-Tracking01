@@ -70,6 +70,8 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
       .eq("id", channel.hotel_id)
       .maybeSingle();
     hotelName = hotel?.name ?? null;
+  } else {
+    hotelName = "Alle Hotels";
   }
 
   if (!profile.is_active) {

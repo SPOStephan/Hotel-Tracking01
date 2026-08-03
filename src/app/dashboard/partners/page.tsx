@@ -1,4 +1,6 @@
 import { createPartnerAction } from "@/app/dashboard/partners/actions";
+import { HotelScopeFields } from "@/app/dashboard/partners/hotel-scope-fields";
+import { PartnerOptionalFields } from "@/app/dashboard/partners/partner-optional-fields";
 import { PartnerAdminList } from "@/app/dashboard/partners/partner-admin-list";
 import { listPartnersWithStats } from "@/lib/partner/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -66,25 +68,12 @@ export default async function PartnersAdminPage({ searchParams }: PageProps) {
               placeholder="partner@example.com"
             />
           </label>
-          <label className="block space-y-1.5 text-sm sm:col-span-2">
-            <span className="font-medium">Hotel</span>
-            <select
-              name="hotel_id"
-              required
-              className="w-full rounded-lg border border-line bg-panel px-3 py-2"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Hotel wählen
-              </option>
-              {(hotels ?? []).map((hotel) => (
-                <option key={hotel.id} value={hotel.id}>
-                  {hotel.name}
-                  {hotel.opb_hotel_id ? ` (${hotel.opb_hotel_id})` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+
+          <HotelScopeFields
+            hotels={hotels ?? []}
+            idPrefix="create-partner"
+          />
+
           <label className="block space-y-1.5 text-sm">
             <span className="font-medium">Partner-Code (ref)</span>
             <input
@@ -107,6 +96,9 @@ export default async function PartnersAdminPage({ searchParams }: PageProps) {
               className="w-full rounded-lg border border-line bg-panel px-3 py-2"
             />
           </label>
+
+          <PartnerOptionalFields />
+
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input
               type="checkbox"

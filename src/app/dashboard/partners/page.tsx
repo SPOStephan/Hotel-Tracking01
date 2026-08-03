@@ -71,7 +71,6 @@ export default async function PartnersAdminPage({ searchParams }: PageProps) {
 
           <HotelScopeFields
             hotels={hotels ?? []}
-            idPrefix="create-partner"
           />
 
           <label className="block space-y-1.5 text-sm">

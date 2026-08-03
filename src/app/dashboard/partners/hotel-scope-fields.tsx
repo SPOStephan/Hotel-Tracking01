@@ -1,7 +1,3 @@
-"use client";
-
-import { useState } from "react";
-
 export type HotelOption = {
   id: string;
   name: string;
@@ -13,46 +9,48 @@ type Props = {
   /** When true, partner applies to all hotels (channel.hotel_id = null). */
   defaultAllHotels?: boolean;
   defaultHotelId?: string;
-  /** Prefix for unique ids when multiple forms are on one page. */
-  idPrefix?: string;
 };
 
+/**
+ * Server-rendered so the “Alle Hotels” control is always visible in HTML
+ * (no client hydration required).
+ */
 export function HotelScopeFields({
   hotels,
   defaultAllHotels = false,
   defaultHotelId = "",
-  idPrefix = "partner",
 }: Props) {
-  const [allHotels, setAllHotels] = useState(defaultAllHotels);
-
   return (
-    <div className="space-y-3 sm:col-span-2">
-      <label className="flex items-center gap-2 text-sm">
+    <fieldset className="space-y-3 sm:col-span-2 rounded-lg border border-line bg-panel/40 p-4">
+      <legend className="px-1 text-sm font-medium">Hotel-Zuordnung</legend>
+
+      <label className="flex items-start gap-3 text-sm">
         <input
           type="checkbox"
           name="all_hotels"
-          checked={allHotels}
-          onChange={(event) => setAllHotels(event.target.checked)}
-          className="size-4"
+          value="on"
+          defaultChecked={defaultAllHotels}
+          className="mt-0.5 size-4 shrink-0"
         />
-        <span>Alle Hotels freischalten</span>
+        <span>
+          <span className="font-medium">Alle Hotels freischalten</span>
+          <span className="mt-0.5 block text-xs text-muted">
+            Partner-Code gilt für die gesamte Hotelgruppe. Einzelnes Hotel
+            darunter nur wählen, wenn dieser Haken nicht gesetzt ist.
+          </span>
+        </span>
       </label>
-      <p className="text-xs text-muted">
-        Mit Haken gilt der Partner-Code gruppenweit. Ohne Haken ein einzelnes
-        Hotel wählen.
-      </p>
+
       <label className="block space-y-1.5 text-sm">
-        <span className="font-medium">Hotel</span>
+        <span className="font-medium">Einzelnes Hotel</span>
         <select
-          id={`${idPrefix}-hotel`}
           name="hotel_id"
-          required={!allHotels}
-          disabled={allHotels}
-          className="w-full rounded-lg border border-line bg-panel px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-          defaultValue={defaultHotelId}
+          className="w-full rounded-lg border border-line bg-panel px-3 py-2"
+          defaultValue={defaultAllHotels ? "__all__" : defaultHotelId}
         >
+          <option value="__all__">Alle Hotels (gruppenweit)</option>
           <option value="" disabled>
-            Hotel wählen
+            Oder ein Hotel wählen…
           </option>
           {hotels.map((hotel) => (
             <option key={hotel.id} value={hotel.id}>
@@ -62,6 +60,6 @@ export function HotelScopeFields({
           ))}
         </select>
       </label>
-    </div>
+    </fieldset>
   );
 }

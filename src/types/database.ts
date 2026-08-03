@@ -75,6 +75,11 @@ export type PartnerProfile = {
   is_active: boolean;
   email: string | null;
   display_name: string | null;
+  website: string | null;
+  social_profiles: string | null;
+  notes: string | null;
+  iban: string | null;
+  account_holder: string | null;
   created_at: string;
 };
 
@@ -156,6 +161,11 @@ export type Database = {
           is_active?: boolean;
           email?: string | null;
           display_name?: string | null;
+          website?: string | null;
+          social_profiles?: string | null;
+          notes?: string | null;
+          iban?: string | null;
+          account_holder?: string | null;
           created_at?: string;
         };
         Update: {
@@ -165,6 +175,11 @@ export type Database = {
           is_active?: boolean;
           email?: string | null;
           display_name?: string | null;
+          website?: string | null;
+          social_profiles?: string | null;
+          notes?: string | null;
+          iban?: string | null;
+          account_holder?: string | null;
           created_at?: string;
         };
         Relationships: [

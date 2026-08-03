@@ -1,6 +1,10 @@
 "use server";
 
 import { isStaffUser } from "@/lib/auth/roles";
+import {
+  parseHotelScope,
+  parsePartnerOptionalFields,
+} from "@/lib/partner/profile-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -25,12 +29,13 @@ export async function createPartnerAction(formData: FormData) {
     .trim()
     .toLowerCase();
   const displayName = String(formData.get("display_name") ?? "").trim();
-  const hotelId = String(formData.get("hotel_id") ?? "").trim();
+  const scope = parseHotelScope(formData);
   const refCode = normalizeRef(String(formData.get("ref_code") ?? ""));
   const commissionPercent = Number(
     String(formData.get("commission_percent") ?? "").replace(",", "."),
   );
   const sendInvite = formData.get("send_invite") === "on";
+  const optional = parsePartnerOptionalFields(formData);
 
   if (!email || !email.includes("@")) {
     redirect(
@@ -42,9 +47,9 @@ export async function createPartnerAction(formData: FormData) {
       `/dashboard/partners?error=${encodeURIComponent("Anzeigename nötig")}`,
     );
   }
-  if (!hotelId) {
+  if (scope.error) {
     redirect(
-      `/dashboard/partners?error=${encodeURIComponent("Hotel auswählen")}`,
+      `/dashboard/partners?error=${encodeURIComponent(scope.error)}`,
     );
   }
   if (!refCode || !/^[a-z0-9][a-z0-9_-]{1,60}$/.test(refCode)) {
@@ -72,7 +77,7 @@ export async function createPartnerAction(formData: FormData) {
   const { data: channel, error: channelError } = await supabase
     .from("channels")
     .insert({
-      hotel_id: hotelId,
+      hotel_id: scope.hotelId,
       name: displayName,
       type: "influencer",
       identifier_key: identifierKey,
@@ -108,7 +113,6 @@ export async function createPartnerAction(formData: FormData) {
         });
 
       if (inviteError) {
-        // User may already exist — try lookup
         const { data: listed, error: listError } =
           await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
         if (listError) {
@@ -147,7 +151,6 @@ export async function createPartnerAction(formData: FormData) {
         (u) => u.email?.toLowerCase() === email,
       );
       if (!existing) {
-        // Create user without invite email — admin sets password in Supabase later
         const { data: created, error: createError } =
           await admin.auth.admin.createUser({
             email,
@@ -183,7 +186,6 @@ export async function createPartnerAction(formData: FormData) {
     );
   }
 
-  // Never attach a partner profile to a hotel-group admin account
   {
     const admin = createAdminClient();
     const { data: staffHit, error: staffLookupError } = await admin
@@ -206,6 +208,7 @@ export async function createPartnerAction(formData: FormData) {
     email,
     display_name: displayName,
     is_active: true,
+    ...optional,
   });
 
   if (profileError) {
@@ -219,6 +222,95 @@ export async function createPartnerAction(formData: FormData) {
     `/dashboard/partners?ok=${encodeURIComponent(
       `Partner angelegt (${inviteNote})`,
     )}`,
+  );
+}
+
+export async function updatePartnerAction(formData: FormData) {
+  await requireStaff();
+
+  const id = String(formData.get("id") ?? "").trim();
+  const displayName = String(formData.get("display_name") ?? "").trim();
+  const scope = parseHotelScope(formData);
+  const commissionPercent = Number(
+    String(formData.get("commission_percent") ?? "").replace(",", "."),
+  );
+  const optional = parsePartnerOptionalFields(formData);
+
+  if (!id) {
+    redirect(`/dashboard/partners?error=${encodeURIComponent("Partner-ID fehlt")}`);
+  }
+  if (!displayName) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent("Anzeigename nötig")}`,
+    );
+  }
+  if (scope.error) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(scope.error)}`,
+    );
+  }
+  if (
+    !Number.isFinite(commissionPercent) ||
+    commissionPercent < 0 ||
+    commissionPercent > 100
+  ) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(
+        "Provision in % zwischen 0 und 100",
+      )}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: profile, error: profileLookupError } = await supabase
+    .from("partner_profiles")
+    .select("id, channel_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (profileLookupError || !profile) {
+    redirect(
+      `/dashboard/partners?error=${encodeURIComponent(
+        profileLookupError?.message ?? "Partner nicht gefunden",
+      )}`,
+    );
+  }
+
+  const { error: channelError } = await supabase
+    .from("channels")
+    .update({
+      hotel_id: scope.hotelId,
+      name: displayName,
+      is_commissionable: commissionPercent > 0,
+      commission_type: commissionPercent > 0 ? "percentage" : null,
+      commission_value: commissionPercent > 0 ? commissionPercent : null,
+    })
+    .eq("id", profile.channel_id);
+
+  if (channelError) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(channelError.message)}`,
+    );
+  }
+
+  const { error: profileError } = await supabase
+    .from("partner_profiles")
+    .update({
+      display_name: displayName,
+      ...optional,
+    })
+    .eq("id", id);
+
+  if (profileError) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(profileError.message)}`,
+    );
+  }
+
+  revalidatePath("/dashboard/partners");
+  revalidatePath(`/dashboard/partners/${id}`);
+  redirect(
+    `/dashboard/partners/${id}?ok=${encodeURIComponent("Partner gespeichert")}`,
   );
 }
 

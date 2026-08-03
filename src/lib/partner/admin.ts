@@ -14,23 +14,32 @@ export type AdminPartnerListItem = {
   display_name: string | null;
   is_active: boolean;
   created_at: string;
+  website: string | null;
+  social_profiles: string | null;
+  notes: string | null;
+  iban: string | null;
+  account_holder: string | null;
   channel_name: string;
   identifier_key: string;
+  hotel_id: string | null;
   hotel_name: string | null;
+  all_hotels: boolean;
+  commission_percent: number | null;
   commission_label: string;
   bookings_count: number;
   revenue: number;
   commission_total: number;
 };
 
+const PROFILE_SELECT =
+  "id, user_id, channel_id, email, display_name, is_active, created_at, website, social_profiles, notes, iban, account_holder, channels(id, name, identifier_key, hotel_id, is_commissionable, commission_type, commission_value, hotels(name))";
+
 export async function listPartnersWithStats(): Promise<AdminPartnerListItem[]> {
   const supabase = await createClient();
 
   const { data: profiles, error } = await supabase
     .from("partner_profiles")
-    .select(
-      "id, user_id, channel_id, email, display_name, is_active, created_at, channels(id, name, identifier_key, hotel_id, is_commissionable, commission_type, commission_value, hotels(name))",
-    )
+    .select(PROFILE_SELECT)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -65,12 +74,17 @@ export async function listPartnersWithStats(): Promise<AdminPartnerListItem[]> {
     }
 
     let commissionLabel = "keine";
+    let commissionPercent: number | null = null;
     if (channel?.is_commissionable) {
-      commissionLabel =
-        channel.commission_type === "percentage"
-          ? `${channel.commission_value}\u00A0%`
-          : `${channel.commission_value}\u00A0€`;
+      if (channel.commission_type === "percentage") {
+        commissionPercent = money(channel.commission_value);
+        commissionLabel = `${channel.commission_value}\u00A0%`;
+      } else {
+        commissionLabel = `${channel.commission_value}\u00A0€`;
+      }
     }
+
+    const allHotels = !channel?.hotel_id;
 
     items.push({
       id: profile.id,
@@ -80,9 +94,19 @@ export async function listPartnersWithStats(): Promise<AdminPartnerListItem[]> {
       display_name: profile.display_name,
       is_active: profile.is_active,
       created_at: profile.created_at,
+      website: profile.website,
+      social_profiles: profile.social_profiles,
+      notes: profile.notes,
+      iban: profile.iban,
+      account_holder: profile.account_holder,
       channel_name: channel?.name ?? "—",
       identifier_key: channel?.identifier_key ?? "—",
-      hotel_name: channel?.hotels?.name ?? null,
+      hotel_id: channel?.hotel_id ?? null,
+      hotel_name: allHotels
+        ? "Alle Hotels"
+        : (channel?.hotels?.name ?? null),
+      all_hotels: allHotels,
+      commission_percent: commissionPercent,
       commission_label: commissionLabel,
       bookings_count: (bookings ?? []).length,
       revenue,

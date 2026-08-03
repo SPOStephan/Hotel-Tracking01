@@ -1,6 +1,6 @@
 "use server";
 
-import { isPartnerUser } from "@/lib/auth/roles";
+import { isStaffUser } from "@/lib/auth/roles";
 import {
   isValidOpbHotelId,
   isValidOpbVersion,
@@ -11,7 +11,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createHotelAction(formData: FormData) {
-  if (await isPartnerUser()) {
+  if (!(await isStaffUser())) {
     redirect("/partner");
   }
 
@@ -60,7 +60,7 @@ export async function createHotelAction(formData: FormData) {
 }
 
 export async function updateHotelAction(formData: FormData) {
-  if (await isPartnerUser()) {
+  if (!(await isStaffUser())) {
     redirect("/partner");
   }
 

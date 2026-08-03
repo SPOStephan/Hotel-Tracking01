@@ -1,4 +1,4 @@
-import { isPartnerUser } from "@/lib/auth/roles";
+import { isStaffUser } from "@/lib/auth/roles";
 import { toCsv } from "@/lib/dashboard/csv";
 import { isCsvReconciliationEnabled } from "@/lib/settings/app-settings";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (await isPartnerUser()) {
+  if (!(await isStaffUser())) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

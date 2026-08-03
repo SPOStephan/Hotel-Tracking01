@@ -1,6 +1,6 @@
 "use server";
 
-import { isPartnerUser } from "@/lib/auth/roles";
+import { isStaffUser } from "@/lib/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -13,7 +13,7 @@ function normalizeRef(raw: string): string {
 }
 
 async function requireStaff() {
-  if (await isPartnerUser()) {
+  if (!(await isStaffUser())) {
     redirect("/partner");
   }
 }
@@ -181,6 +181,23 @@ export async function createPartnerAction(formData: FormData) {
     redirect(
       `/dashboard/partners?error=${encodeURIComponent("Kein User für Partner")}`,
     );
+  }
+
+  // Never attach a partner profile to a hotel-group admin account
+  {
+    const admin = createAdminClient();
+    const { data: staffHit, error: staffLookupError } = await admin
+      .from("staff_profiles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!staffLookupError && staffHit) {
+      redirect(
+        `/dashboard/partners?error=${encodeURIComponent(
+          "Diese E-Mail ist ein Staff-/Admin-Account. Bitte eine eigene Partner-E-Mail nutzen.",
+        )}`,
+      );
+    }
   }
 
   const { error: profileError } = await supabase.from("partner_profiles").insert({

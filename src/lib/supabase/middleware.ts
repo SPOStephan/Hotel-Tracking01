@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Refreshes Supabase Auth session and protects /dashboard + /partner.
+ * Staff (staff_profiles) may access /dashboard even if they also have a
+ * partner profile. Pure partners are kept on /partner.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -48,29 +50,44 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (isDashboard || isPartner || isLogin)) {
-    const { data: profiles } = await supabase
-      .from("partner_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
+    const [{ data: partnerRows }, { data: staffRows, error: staffError }] =
+      await Promise.all([
+        supabase
+          .from("partner_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1),
+        supabase
+          .from("staff_profiles")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .limit(1),
+      ]);
 
-    const isPartnerUser = (profiles?.length ?? 0) > 0;
+    const isPartnerUser = (partnerRows?.length ?? 0) > 0;
+    const hasStaffRow = !staffError && (staffRows?.length ?? 0) > 0;
+    // Explicit staff row, or legacy: no partner profile ⇒ staff
+    const isStaffUser = hasStaffRow || !isPartnerUser;
 
     if (isLogin) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = isPartnerUser ? "/partner" : "/dashboard";
+      redirectUrl.pathname = isStaffUser
+        ? "/dashboard"
+        : isPartnerUser
+          ? "/partner"
+          : "/dashboard";
       redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }
 
-    if (isPartnerUser && isDashboard) {
+    if (isDashboard && !isStaffUser) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/partner";
       redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }
 
-    if (!isPartnerUser && isPartner) {
+    if (isPartner && !isPartnerUser) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       redirectUrl.search = "";

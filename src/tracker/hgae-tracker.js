@@ -196,12 +196,31 @@
     return (HGAE.config.apiBase || location.origin).replace(/\/$/, "") + path;
   }
 
+  function sameOrigin(url) {
+    try {
+      return new URL(url, location.href).origin === location.origin;
+    } catch {
+      return false;
+    }
+  }
+
   function post(url, payload) {
     var body = JSON.stringify(payload);
-    // sendBeacon is great for production page-unload; skip in debug so callers get JSON.
-    if (!HGAE.config.debug && navigator.sendBeacon) {
+    // sendBeacon always uses credentials:"include". Cross-origin beacons then
+    // fail CORS unless Allow-Credentials is set — and returning true skips fetch.
+    // Prefer fetch+keepalive for hotel sites (api on analytics.*).
+    if (
+      !HGAE.config.debug &&
+      navigator.sendBeacon &&
+      sameOrigin(url)
+    ) {
       try {
-        if (navigator.sendBeacon(url, new Blob([body], { type: "application/json" })))
+        if (
+          navigator.sendBeacon(
+            url,
+            new Blob([body], { type: "application/json" }),
+          )
+        )
           return Promise.resolve({ ok: true });
       } catch {}
     }

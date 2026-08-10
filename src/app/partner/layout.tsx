@@ -27,7 +27,7 @@ export default async function PartnerLayout({
             Partner-Portal
           </h1>
           <p className="text-sm text-muted">
-            Deine Links, Buchungen und Provisionen
+            Deine Links, Klicks, Buchungen und Provisionen
             {user?.email ? ` · ${user.email}` : null}
           </p>
           {!staff ? (

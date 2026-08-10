@@ -8,7 +8,8 @@
     "build:tracker": "terser src/tracker/hgae-tracker.js -c passes=3,ecma=2018 -m --comments false -o public/hgae-tracker.js",
     "start": "next start",
     "lint": "eslint",
-    "smoke": "tsx scripts/smoke-conversions.ts"
+    "smoke": "tsx scripts/smoke-conversions.ts",
+    "smoke:clicks": "tsx scripts/smoke-click-stats.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

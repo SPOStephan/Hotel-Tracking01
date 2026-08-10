@@ -1,6 +1,11 @@
 import { setPartnerActiveAction, updatePartnerAction } from "@/app/dashboard/partners/actions";
 import { HotelScopeFields } from "@/app/dashboard/partners/hotel-scope-fields";
 import { PartnerOptionalFields } from "@/app/dashboard/partners/partner-optional-fields";
+import { ClickStatsSection } from "@/components/click-stats-section";
+import {
+  getClickStats,
+  parseClickGranularity,
+} from "@/lib/clicks/stats";
 import { format } from "@/lib/dashboard/format";
 import { getPartnerAdminDetail } from "@/lib/partner/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -11,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; clicks?: string }>;
 };
 
 export default async function PartnerDetailPage({
@@ -22,6 +27,12 @@ export default async function PartnerDetailPage({
   const query = await searchParams;
   const partner = await getPartnerAdminDetail(id);
   if (!partner) notFound();
+
+  const clickStats = await getClickStats({
+    channelIds: [partner.channel_id],
+    granularity: parseClickGranularity(query.clicks),
+    includeChannelBreakdown: false,
+  });
 
   const supabase = await createClient();
   const { data: hotels } = await supabase
@@ -70,11 +81,19 @@ export default async function PartnerDetailPage({
         </button>
       </form>
 
-      <section className="grid gap-6 sm:grid-cols-3">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi label="Klicks (gesamt)" value={format.int(partner.clicks_count)} />
         <Kpi label="Buchungen" value={format.int(partner.bookings_count)} />
         <Kpi label="Umsatz" value={format.eur(partner.revenue)} />
         <Kpi label="Provision" value={format.eur(partner.commission_total)} />
       </section>
+
+      <ClickStatsSection
+        stats={clickStats}
+        basePath={`/dashboard/partners/${partner.id}`}
+        title="Klick-Statistik"
+        description={`Klicks auf Links mit ${partner.identifier_key} — Tag / Woche / Monat (Europe/Berlin).`}
+      />
 
       <section className="space-y-4 border-t border-line pt-8">
         <h3 className="font-medium">Partner bearbeiten</h3>

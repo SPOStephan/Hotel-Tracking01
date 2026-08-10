@@ -29,6 +29,7 @@ export function PartnerAdminList({ partners }: Props) {
             <th className="py-2 pr-3 font-medium">Hotel</th>
             <th className="py-2 pr-3 font-medium">Code</th>
             <th className="py-2 pr-3 font-medium">Status</th>
+            <th className="py-2 pr-3 font-medium tabular-nums">Klicks</th>
             <th className="py-2 pr-3 font-medium tabular-nums">Buchungen</th>
             <th className="py-2 pr-3 font-medium tabular-nums">Umsatz</th>
             <th className="py-2 pr-3 font-medium tabular-nums">Provision</th>
@@ -57,6 +58,12 @@ export function PartnerAdminList({ partners }: Props) {
                 ) : (
                   <span className="text-amber-800">deaktiviert</span>
                 )}
+              </td>
+              <td className="py-2.5 pr-3 tabular-nums">
+                {partner.clicks_count}
+                <div className="text-xs text-muted">
+                  heute {partner.clicks_today} · Monat {partner.clicks_month}
+                </div>
               </td>
               <td className="py-2.5 pr-3 tabular-nums">
                 {partner.bookings_count}

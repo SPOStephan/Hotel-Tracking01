@@ -1,6 +1,9 @@
 "use client";
 
-import { updateHotelAction } from "@/app/dashboard/hotels/actions";
+import {
+  deleteHotelAction,
+  updateHotelAction,
+} from "@/app/dashboard/hotels/actions";
 import { useState } from "react";
 
 export type HotelRow = {
@@ -120,6 +123,39 @@ export function HotelList({ hotels, appBase }: Props) {
                 {embed}
               </pre>
             </div>
+
+            <details className="text-sm">
+              <summary className="cursor-pointer font-medium text-red-800">
+                Hotel löschen
+              </summary>
+              <form
+                action={deleteHotelAction}
+                className="mt-3 max-w-xl space-y-3 rounded-lg border border-red-200 bg-red-50/40 p-4"
+              >
+                <input type="hidden" name="id" value={hotel.id} />
+                <p className="text-muted">
+                  Entfernt das Hotel inkl. zugehöriger Buchungen und
+                  hotel-gebundener Kanäle. Zum Bestätigen den exakten
+                  Anzeigenamen eingeben:
+                </p>
+                <label className="block space-y-1.5">
+                  <span className="font-medium">{hotel.name}</span>
+                  <input
+                    name="confirm_name"
+                    required
+                    autoComplete="off"
+                    placeholder="Anzeigename zur Bestätigung"
+                    className="w-full rounded-lg border border-line bg-panel px-3 py-2"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white"
+                >
+                  Endgültig löschen
+                </button>
+              </form>
+            </details>
           </li>
         );
       })}

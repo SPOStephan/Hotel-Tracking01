@@ -6,6 +6,7 @@ import {
   isValidOpbVersion,
   normalizeOpbHotelId,
 } from "@/lib/hotels/resolve";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -113,4 +114,79 @@ export async function updateHotelAction(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/hotels");
   redirect(`/dashboard/hotels?ok=${encodeURIComponent("Hotel gespeichert")}`);
+}
+
+export async function deleteHotelAction(formData: FormData) {
+  if (!(await isStaffUser())) {
+    redirect("/partner");
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  const confirmName = String(formData.get("confirm_name") ?? "").trim();
+
+  if (!id) {
+    redirect(`/dashboard/hotels?error=${encodeURIComponent("Hotel-ID fehlt")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: hotel, error: loadError } = await supabase
+    .from("hotels")
+    .select("id, name, opb_hotel_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (loadError || !hotel) {
+    redirect(
+      `/dashboard/hotels?error=${encodeURIComponent(
+        loadError?.message ?? "Hotel nicht gefunden",
+      )}`,
+    );
+  }
+
+  if (confirmName !== hotel.name) {
+    redirect(
+      `/dashboard/hotels?error=${encodeURIComponent(
+        "Löschen abgebrochen: Name zur Bestätigung stimmt nicht",
+      )}`,
+    );
+  }
+
+  // Service role: bookings.hotel_id is ON DELETE RESTRICT; channels cascade.
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch {
+    redirect(
+      `/dashboard/hotels?error=${encodeURIComponent(
+        "Server-Konfiguration fehlt (Service Role)",
+      )}`,
+    );
+  }
+
+  const { error: bookingsError } = await admin
+    .from("bookings")
+    .delete()
+    .eq("hotel_id", id);
+
+  if (bookingsError) {
+    redirect(
+      `/dashboard/hotels?error=${encodeURIComponent(
+        `Buchungen konnten nicht gelöscht werden: ${bookingsError.message}`,
+      )}`,
+    );
+  }
+
+  const { error } = await admin.from("hotels").delete().eq("id", id);
+
+  if (error) {
+    redirect(`/dashboard/hotels?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/hotels");
+  redirect(
+    `/dashboard/hotels?ok=${encodeURIComponent(
+      `Hotel „${hotel.name}“ gelöscht`,
+    )}`,
+  );
 }

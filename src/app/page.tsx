@@ -71,13 +71,9 @@ export default async function HomePage() {
           — Buchungs-Ingestion
         </li>
         <li>
-          Demo / OPB-Hotel-IDs:{" "}
+          OPB-Hotel-ID:{" "}
           <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-800">
             lohbeckambassador
-          </code>
-          ,{" "}
-          <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-800">
-            demo-seaside
           </code>{" "}
           <span className="text-zinc-400">(intern auch UUID ok)</span>
         </li>

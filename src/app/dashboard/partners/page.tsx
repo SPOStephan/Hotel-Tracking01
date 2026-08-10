@@ -106,8 +106,9 @@ export default async function PartnersAdminPage({ searchParams }: PageProps) {
               className="size-4"
             />
             <span>
-              Einladungs-E-Mail senden (Supabase Auth Invite). Ohne Haken: User
-              wird ohne Mail angelegt bzw. bestehender User verknüpft.
+              Einladungs-E-Mail senden. Der Partner öffnet den Link und legt
+              dort ein Passwort fest. Ohne Haken: User ohne Mail (Passwort
+              separat setzen).
             </span>
           </label>
           <div className="sm:col-span-2">

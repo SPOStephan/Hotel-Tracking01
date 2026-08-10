@@ -55,6 +55,15 @@ export default async function LoginPage({ searchParams }: PageProps) {
           Anmelden
         </button>
       </form>
+
+      <p className="text-sm text-muted">
+        Eingeladen und noch kein Passwort? Nutze den Link in der Mail erneut
+        oder{" "}
+        <a href="/auth/forgot-password" className="underline">
+          Passwort zurücksetzen
+        </a>
+        .
+      </p>
     </main>
   );
 }

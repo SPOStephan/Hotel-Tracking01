@@ -1,4 +1,8 @@
-import { setPartnerActiveAction, updatePartnerAction } from "@/app/dashboard/partners/actions";
+import {
+  setPartnerActiveAction,
+  setPartnerPasswordAction,
+  updatePartnerAction,
+} from "@/app/dashboard/partners/actions";
 import { HotelScopeFields } from "@/app/dashboard/partners/hotel-scope-fields";
 import { PartnerOptionalFields } from "@/app/dashboard/partners/partner-optional-fields";
 import { ClickStatsSection } from "@/components/click-stats-section";
@@ -80,6 +84,52 @@ export default async function PartnerDetailPage({
           {partner.is_active ? "Partner deaktivieren" : "Partner freischalten"}
         </button>
       </form>
+
+      <section className="space-y-3 border-t border-line pt-8">
+        <h3 className="font-medium">Passwort setzen (ohne E-Mail)</h3>
+        <p className="max-w-xl text-sm text-muted">
+          Wenn Supabase-Invite/Reset wegen Rate-Limit nicht geht: hier ein
+          temporäres Passwort setzen und dem Partner sicher mitteilen. Login:
+          {" "}
+          <code>/login</code>
+        </p>
+        <form
+          action={setPartnerPasswordAction}
+          className="grid max-w-md gap-3 sm:grid-cols-2"
+        >
+          <input type="hidden" name="id" value={partner.id} />
+          <label className="block space-y-1.5 text-sm sm:col-span-2">
+            <span className="font-medium">Neues Passwort</span>
+            <input
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2"
+            />
+          </label>
+          <label className="block space-y-1.5 text-sm sm:col-span-2">
+            <span className="font-medium">Wiederholen</span>
+            <input
+              name="confirm"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white"
+            >
+              Passwort speichern
+            </button>
+          </div>
+        </form>
+      </section>
 
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Klicks (gesamt)" value={format.int(partner.clicks_count)} />

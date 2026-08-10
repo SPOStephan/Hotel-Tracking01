@@ -336,3 +336,75 @@ export async function setPartnerActiveAction(formData: FormData) {
     )}`,
   );
 }
+
+/**
+ * Sets a password for the partner Auth user without sending email
+ * (works around Supabase invite/recovery rate limits).
+ */
+export async function setPartnerPasswordAction(formData: FormData) {
+  await requireStaff();
+
+  const id = String(formData.get("id") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (!id) {
+    redirect(`/dashboard/partners?error=${encodeURIComponent("Partner-ID fehlt")}`);
+  }
+  if (password.length < 8) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(
+        "Passwort mindestens 8 Zeichen",
+      )}`,
+    );
+  }
+  if (password !== confirm) {
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(
+        "Passwörter stimmen nicht überein",
+      )}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: profile, error: profileError } = await supabase
+    .from("partner_profiles")
+    .select("id, user_id, email")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (profileError || !profile) {
+    redirect(
+      `/dashboard/partners?error=${encodeURIComponent(
+        profileError?.message ?? "Partner nicht gefunden",
+      )}`,
+    );
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.updateUserById(profile.user_id, {
+      password,
+      email_confirm: true,
+    });
+    if (error) {
+      redirect(
+        `/dashboard/partners/${id}?error=${encodeURIComponent(error.message)}`,
+      );
+    }
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(
+      `/dashboard/partners/${id}?error=${encodeURIComponent(
+        error instanceof Error ? error.message : "Passwort konnte nicht gesetzt werden",
+      )}`,
+    );
+  }
+
+  revalidatePath(`/dashboard/partners/${id}`);
+  redirect(
+    `/dashboard/partners/${id}?ok=${encodeURIComponent(
+      `Passwort gesetzt für ${profile.email ?? "Partner"} — bitte sicher übermitteln (nicht per öffentlichem Kanal).`,
+    )}`,
+  );
+}

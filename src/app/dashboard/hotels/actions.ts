@@ -6,6 +6,7 @@ import {
   isValidOpbVersion,
   normalizeOpbHotelId,
 } from "@/lib/hotels/resolve";
+import { parseWebsiteUrl } from "@/lib/hotels/website-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -21,6 +22,7 @@ export async function createHotelAction(formData: FormData) {
     String(formData.get("opb_hotel_id") ?? ""),
   );
   const opbVersion = String(formData.get("opb_version") ?? "").trim();
+  const website = parseWebsiteUrl(String(formData.get("website_url") ?? ""));
 
   if (!name) {
     redirect(
@@ -39,12 +41,16 @@ export async function createHotelAction(formData: FormData) {
       `/dashboard/hotels?error=${encodeURIComponent("OPB-Version muss v5 oder v6 sein")}`,
     );
   }
+  if (!website.ok) {
+    redirect(`/dashboard/hotels?error=${encodeURIComponent(website.error)}`);
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.from("hotels").insert({
     name,
     opb_hotel_id: opbHotelId,
     opb_version: opbVersion,
+    website_url: website.url,
   });
 
   if (error) {
@@ -71,6 +77,7 @@ export async function updateHotelAction(formData: FormData) {
     String(formData.get("opb_hotel_id") ?? ""),
   );
   const opbVersion = String(formData.get("opb_version") ?? "").trim();
+  const website = parseWebsiteUrl(String(formData.get("website_url") ?? ""));
 
   if (!id) {
     redirect(`/dashboard/hotels?error=${encodeURIComponent("Hotel-ID fehlt")}`);
@@ -92,6 +99,9 @@ export async function updateHotelAction(formData: FormData) {
       `/dashboard/hotels?error=${encodeURIComponent("OPB-Version muss v5 oder v6 sein")}`,
     );
   }
+  if (!website.ok) {
+    redirect(`/dashboard/hotels?error=${encodeURIComponent(website.error)}`);
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -100,6 +110,7 @@ export async function updateHotelAction(formData: FormData) {
       name,
       opb_hotel_id: opbHotelId,
       opb_version: opbVersion,
+      website_url: website.url,
     })
     .eq("id", id);
 

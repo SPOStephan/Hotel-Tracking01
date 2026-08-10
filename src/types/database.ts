@@ -24,6 +24,7 @@ export type Hotel = {
   name: string;
   opb_version: OpbVersion;
   opb_hotel_id: string | null;
+  website_url: string | null;
   created_at: string;
 };
 
@@ -107,6 +108,7 @@ export type Database = {
           name: string;
           opb_version: OpbVersion;
           opb_hotel_id?: string | null;
+          website_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -114,6 +116,7 @@ export type Database = {
           name?: string;
           opb_version?: OpbVersion;
           opb_hotel_id?: string | null;
+          website_url?: string | null;
           created_at?: string;
         };
         Relationships: [];

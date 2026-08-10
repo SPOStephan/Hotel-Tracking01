@@ -17,7 +17,7 @@ export default async function HotelsPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const { data: hotels } = await supabase
     .from("hotels")
-    .select("id, name, opb_version, opb_hotel_id, created_at")
+    .select("id, name, opb_version, opb_hotel_id, website_url, created_at")
     .order("name");
 
   const rows = (hotels ?? []).map((hotel) => ({
@@ -25,6 +25,7 @@ export default async function HotelsPage({ searchParams }: PageProps) {
     name: hotel.name,
     opb_version: hotel.opb_version,
     opb_hotel_id: hotel.opb_hotel_id,
+    website_url: hotel.website_url,
   }));
 
   return (
@@ -32,9 +33,9 @@ export default async function HotelsPage({ searchParams }: PageProps) {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Hotels</h2>
         <p className="max-w-2xl text-sm text-muted">
-          Anzeigename und OPB-Hotel-ID sind unabhängig. Zum Ändern eines
-          bestehenden Hotels auf <strong>Bearbeiten</strong> klicken, Werte
-          anpassen und <strong>Änderungen speichern</strong>.
+          Anzeigename, OPB-Hotel-ID und Website-URL sind unabhängig. Die
+          Website-URL wird Partnern als vorausgefüllter Link angeboten. Zum
+          Ändern auf <strong>Bearbeiten</strong> klicken und speichern.
         </p>
       </div>
 
@@ -78,6 +79,19 @@ export default async function HotelsPage({ searchParams }: PageProps) {
             />
             <span className="text-muted">
               Technische ID aus OnePageBooking — nicht der Anzeigename.
+            </span>
+          </label>
+          <label className="block space-y-1.5 text-sm sm:col-span-2">
+            <span className="font-medium">Website-URL</span>
+            <input
+              name="website_url"
+              type="url"
+              required
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2"
+              placeholder="https://www.hotel.de/"
+            />
+            <span className="text-muted">
+              Startseite oder Buchungsseite — Basis für Partner-Links.
             </span>
           </label>
           <label className="block space-y-1.5 text-sm">

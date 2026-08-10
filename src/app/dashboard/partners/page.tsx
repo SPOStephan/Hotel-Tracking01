@@ -26,8 +26,9 @@ export default async function PartnersAdminPage({ searchParams }: PageProps) {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Partner</h2>
         <p className="max-w-2xl text-sm text-muted">
-          Influencer/Affiliates anlegen, per E-Mail einladen, freischalten und
-          Auswertungen einsehen.
+          Influencer/Affiliates hier anlegen (mit oder ohne Einladungs-Mail) —
+          nicht nur in Supabase Auth, sonst fehlt das Partner-Profil. Staff/
+          Admin nur über Eintrag in <code>staff_profiles</code>.
         </p>
       </div>
 

@@ -39,7 +39,12 @@ $$;
 revoke all on function public.is_staff_user() from public;
 grant execute on function public.is_staff_user() to authenticated;
 
--- Bisherige Staff-User (kein Partner-Profil) übernehmen
+-- Einmalige Übernahme alter Staff-User (kein Partner-Profil).
+-- ACHTUNG: Bei erneutem Ausführen würden ALLE Auth-User ohne Partner-Profil
+-- wieder zu Staff. Für neue Admins gezielt einfügen, z. B.:
+--   insert into public.staff_profiles (user_id)
+--   select id from auth.users where email = 'admin@example.com'
+--   on conflict (user_id) do nothing;
 insert into public.staff_profiles (user_id)
 select u.id
 from auth.users u

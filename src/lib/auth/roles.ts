@@ -21,8 +21,8 @@ export async function isPartnerUser(): Promise<boolean> {
 }
 
 /**
- * Hotel-group admin. Explicit staff_profiles row wins; legacy fallback is
- * "authenticated without partner profile" until staff_profiles is populated.
+ * Hotel-group admin — only via explicit staff_profiles row.
+ * Bare Auth users (e.g. created in Supabase Dashboard) are NOT staff.
  */
 export async function isStaffUser(): Promise<boolean> {
   const supabase = await createClient();
@@ -37,16 +37,8 @@ export async function isStaffUser(): Promise<boolean> {
     .eq("user_id", user.id)
     .limit(1);
 
-  if (!error && (staffRows?.length ?? 0) > 0) {
-    return true;
-  }
-
-  // Legacy / pre-migration: no partner profile ⇒ staff
-  if (error) {
-    return !(await isPartnerUser());
-  }
-
-  return !(await isPartnerUser());
+  if (error) return false;
+  return (staffRows?.length ?? 0) > 0;
 }
 
 export async function resolvePostLoginPath(
@@ -56,10 +48,7 @@ export async function resolvePostLoginPath(
   const partner = await isPartnerUser();
 
   if (staff) {
-    if (
-      preferredNext?.startsWith("/partner") &&
-      partner
-    ) {
+    if (preferredNext?.startsWith("/partner") && partner) {
       return preferredNext;
     }
     if (preferredNext?.startsWith("/dashboard")) {
@@ -73,6 +62,5 @@ export async function resolvePostLoginPath(
     return "/partner";
   }
 
-  if (preferredNext?.startsWith("/")) return preferredNext;
-  return "/dashboard";
+  return "/auth/no-access";
 }

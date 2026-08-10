@@ -311,9 +311,9 @@ export type Database = {
   };
 };
 
-/** Stable demo IDs (see supabase/seed.sql) — safe for docs & tracker tests. */
-export const DEMO_HOTEL_ID = "a0000000-0000-4000-8000-000000000001";
-export const DEMO_HOTEL_OPB_ID = "demo-seaside";
+/** Stable seed IDs (see supabase/seed.sql) — safe for docs & tracker tests. */
+export const DEMO_HOTEL_ID = "a0000000-0000-4000-8000-000000000002";
+export const DEMO_HOTEL_OPB_ID = "lohbeckambassador";
 export const LOHBECK_AMBASSADOR_OPB_ID = "lohbeckambassador";
 export const DEMO_INFLUENCER_CHANNEL_ID =
   "b0000000-0000-4000-8000-000000000001";

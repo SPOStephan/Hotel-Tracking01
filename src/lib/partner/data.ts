@@ -1,10 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
 import type { BookingStatus, Channel, CommissionType } from "@/types/database";
 
+export type PartnerHotelLinkOption = {
+  id: string;
+  name: string;
+  website_url: string;
+};
+
 export type PartnerPortalData = {
   inactive: boolean;
   channel: Channel;
   hotelName: string | null;
+  /** Prefill URL when partner is scoped to one hotel. */
+  defaultWebsiteUrl: string | null;
+  /** Hotels with website URLs the partner may link to (all-hotels or single). */
+  hotelLinkOptions: PartnerHotelLinkOption[];
   totals: {
     bookings_count: number;
     revenue: number;
@@ -32,6 +42,54 @@ function extractRef(identifierKey: string): string | null {
     return identifierKey.slice(4);
   }
   return null;
+}
+
+async function loadHotelLinkOptions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  hotelId: string | null,
+): Promise<{
+  hotelName: string | null;
+  defaultWebsiteUrl: string | null;
+  hotelLinkOptions: PartnerHotelLinkOption[];
+}> {
+  if (hotelId) {
+    const { data: hotel } = await supabase
+      .from("hotels")
+      .select("id, name, website_url")
+      .eq("id", hotelId)
+      .maybeSingle();
+
+    const url = hotel?.website_url?.trim() || null;
+    return {
+      hotelName: hotel?.name ?? null,
+      defaultWebsiteUrl: url,
+      hotelLinkOptions:
+        hotel && url
+          ? [{ id: hotel.id, name: hotel.name, website_url: url }]
+          : [],
+    };
+  }
+
+  const { data: hotels } = await supabase
+    .from("hotels")
+    .select("id, name, website_url")
+    .order("name");
+
+  const hotelLinkOptions = (hotels ?? [])
+    .filter((h): h is { id: string; name: string; website_url: string } =>
+      Boolean(h.website_url?.trim()),
+    )
+    .map((h) => ({
+      id: h.id,
+      name: h.name,
+      website_url: h.website_url.trim(),
+    }));
+
+  return {
+    hotelName: "Alle Hotels",
+    defaultWebsiteUrl: hotelLinkOptions[0]?.website_url ?? null,
+    hotelLinkOptions,
+  };
 }
 
 export async function getPartnerPortalData(): Promise<PartnerPortalData | null> {
@@ -62,17 +120,8 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
 
   if (!channel) return null;
 
-  let hotelName: string | null = null;
-  if (channel.hotel_id) {
-    const { data: hotel } = await supabase
-      .from("hotels")
-      .select("name")
-      .eq("id", channel.hotel_id)
-      .maybeSingle();
-    hotelName = hotel?.name ?? null;
-  } else {
-    hotelName = "Alle Hotels";
-  }
+  const hotelMeta = await loadHotelLinkOptions(supabase, channel.hotel_id);
+  const refParam = extractRef(channel.identifier_key);
 
   if (!profile.is_active) {
     return {
@@ -81,7 +130,9 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
         ...channel,
         commission_type: channel.commission_type as CommissionType | null,
       },
-      hotelName,
+      hotelName: hotelMeta.hotelName,
+      defaultWebsiteUrl: hotelMeta.defaultWebsiteUrl,
+      hotelLinkOptions: hotelMeta.hotelLinkOptions,
       totals: {
         bookings_count: 0,
         revenue: 0,
@@ -89,7 +140,7 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
         touchpoints_count: 0,
       },
       bookings: [],
-      refParam: extractRef(channel.identifier_key),
+      refParam,
     };
   }
 
@@ -122,7 +173,9 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
       ...channel,
       commission_type: channel.commission_type as CommissionType | null,
     },
-    hotelName,
+    hotelName: hotelMeta.hotelName,
+    defaultWebsiteUrl: hotelMeta.defaultWebsiteUrl,
+    hotelLinkOptions: hotelMeta.hotelLinkOptions,
     totals: {
       bookings_count: rows.length,
       revenue,
@@ -140,6 +193,6 @@ export async function getPartnerPortalData(): Promise<PartnerPortalData | null> 
       status: row.status,
       created_at: row.created_at,
     })),
-    refParam: extractRef(channel.identifier_key),
+    refParam,
   };
 }

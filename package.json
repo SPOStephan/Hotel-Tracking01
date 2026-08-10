@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "smoke": "tsx scripts/smoke-conversions.ts",
-    "smoke:clicks": "tsx scripts/smoke-click-stats.ts"
+    "smoke:clicks": "tsx scripts/smoke-click-stats.ts",
+    "smoke:website": "tsx scripts/smoke-website-url.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

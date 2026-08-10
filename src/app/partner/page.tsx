@@ -82,11 +82,16 @@ export default async function PartnerPage({ searchParams }: PageProps) {
             Link erzeugen
           </h2>
           <p className="text-sm text-muted">
-            Ziel-URL eingeben — wir hängen deinen Partner-Code an.
+            Hotel-Website ist vorausgefüllt — dein Partner-Parameter wird
+            angehängt. Fertigen Link kopieren.
           </p>
         </div>
         {data.refParam ? (
-          <PartnerLinkGenerator refParam={data.refParam} />
+          <PartnerLinkGenerator
+            refParam={data.refParam}
+            defaultBaseUrl={data.defaultWebsiteUrl}
+            hotelOptions={data.hotelLinkOptions}
+          />
         ) : (
           <p className="text-sm text-muted">
             Für diesen Kanal ist kein <code>ref=</code>-Identifier hinterlegt (

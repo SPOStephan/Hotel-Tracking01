@@ -11,6 +11,7 @@ export type HotelRow = {
   name: string;
   opb_version: "v5" | "v6";
   opb_hotel_id: string | null;
+  website_url: string | null;
 };
 
 type Props = {
@@ -50,6 +51,21 @@ export function HotelList({ hotels, appBase }: Props) {
                     {hotel.opb_hotel_id ?? "—"}
                   </code>{" "}
                   · Version: {hotel.opb_version}
+                </p>
+                <p className="text-sm text-muted break-all">
+                  Website:{" "}
+                  {hotel.website_url ? (
+                    <a
+                      href={hotel.website_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-2"
+                    >
+                      {hotel.website_url}
+                    </a>
+                  ) : (
+                    <span className="text-amber-800">noch nicht hinterlegt</span>
+                  )}
                 </p>
               </div>
               <button
@@ -93,6 +109,20 @@ export function HotelList({ hotels, appBase }: Props) {
                   />
                   <span className="text-muted">
                     Technische ID aus OnePageBooking (z. B. lohbeckambassador).
+                  </span>
+                </label>
+                <label className="block space-y-1.5 text-sm sm:col-span-2">
+                  <span className="font-medium">Website-URL</span>
+                  <input
+                    name="website_url"
+                    type="url"
+                    required
+                    defaultValue={hotel.website_url ?? ""}
+                    placeholder="https://www.hotel.de/"
+                    className="w-full rounded-lg border border-line bg-panel px-3 py-2"
+                  />
+                  <span className="text-muted">
+                    Wird Partnern als vorausgefüllter Tracking-Link angeboten.
                   </span>
                 </label>
                 <label className="block space-y-1.5 text-sm">

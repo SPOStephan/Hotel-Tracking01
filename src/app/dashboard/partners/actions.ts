@@ -108,7 +108,7 @@ export async function createPartnerAction(formData: FormData) {
     if (sendInvite) {
       const { data: invited, error: inviteError } =
         await admin.auth.admin.inviteUserByEmail(email, {
-          redirectTo: `${appUrl}/login`,
+          redirectTo: `${appUrl}/auth/callback?next=/auth/set-password`,
           data: { display_name: displayName, role: "partner" },
         });
 

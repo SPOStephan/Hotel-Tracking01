@@ -41,6 +41,11 @@ export async function updateSession(request: NextRequest) {
   const isDashboard = path.startsWith("/dashboard");
   const isPartner = path.startsWith("/partner");
   const isLogin = path.startsWith("/login");
+  const isSetPassword = path.startsWith("/auth/set-password");
+  const isAuthPublic =
+    path.startsWith("/auth/callback") ||
+    path.startsWith("/auth/forgot-password") ||
+    isSetPassword;
 
   if ((isDashboard || isPartner) && !user) {
     const redirectUrl = request.nextUrl.clone();
@@ -49,7 +54,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && (isDashboard || isPartner || isLogin)) {
+  // Invite/recovery: stay on set-password even when already signed in.
+  if (user && isSetPassword) {
+    return supabaseResponse;
+  }
+
+  if (user && (isDashboard || isPartner || isLogin) && !isAuthPublic) {
     const [{ data: partnerRows }, { data: staffRows, error: staffError }] =
       await Promise.all([
         supabase

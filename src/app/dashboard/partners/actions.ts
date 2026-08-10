@@ -8,7 +8,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 function normalizeRef(raw: string): string {
   const trimmed = raw.trim().toLowerCase();
@@ -98,6 +98,7 @@ export async function createPartnerAction(formData: FormData) {
 
   let userId: string | null = null;
   let inviteNote = "";
+  let authError: string | null = null;
 
   try {
     const admin = createAdminClient();
@@ -116,24 +117,18 @@ export async function createPartnerAction(formData: FormData) {
         const { data: listed, error: listError } =
           await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
         if (listError) {
-          redirect(
-            `/dashboard/partners?error=${encodeURIComponent(
-              `Einladung fehlgeschlagen: ${inviteError.message}`,
-            )}`,
+          authError = `Einladung fehlgeschlagen: ${inviteError.message}`;
+        } else {
+          const existing = listed.users.find(
+            (u) => u.email?.toLowerCase() === email,
           );
+          if (!existing) {
+            authError = `Einladung fehlgeschlagen: ${inviteError.message}`;
+          } else {
+            userId = existing.id;
+            inviteNote = "bestehender-user";
+          }
         }
-        const existing = listed.users.find(
-          (u) => u.email?.toLowerCase() === email,
-        );
-        if (!existing) {
-          redirect(
-            `/dashboard/partners?error=${encodeURIComponent(
-              `Einladung fehlgeschlagen: ${inviteError.message}`,
-            )}`,
-          );
-        }
-        userId = existing.id;
-        inviteNote = "bestehender-user";
       } else {
         userId = invited.user?.id ?? null;
         inviteNote = "einladung-gesendet";
@@ -143,41 +138,40 @@ export async function createPartnerAction(formData: FormData) {
         { page: 1, perPage: 200 },
       );
       if (listError) {
-        redirect(
-          `/dashboard/partners?error=${encodeURIComponent(listError.message)}`,
-        );
-      }
-      const existing = listed.users.find(
-        (u) => u.email?.toLowerCase() === email,
-      );
-      if (!existing) {
-        const { data: created, error: createError } =
-          await admin.auth.admin.createUser({
-            email,
-            email_confirm: true,
-            user_metadata: { display_name: displayName, role: "partner" },
-          });
-        if (createError || !created.user) {
-          redirect(
-            `/dashboard/partners?error=${encodeURIComponent(
-              createError?.message ??
-                "User konnte nicht angelegt werden. Haken bei Einladung setzen oder User vorher in Supabase Auth anlegen.",
-            )}`,
-          );
-        }
-        userId = created.user.id;
-        inviteNote = "user-manuell";
+        authError = listError.message;
       } else {
-        userId = existing.id;
-        inviteNote = "bestehender-user";
+        const existing = listed.users.find(
+          (u) => u.email?.toLowerCase() === email,
+        );
+        if (!existing) {
+          const { data: created, error: createError } =
+            await admin.auth.admin.createUser({
+              email,
+              email_confirm: true,
+              user_metadata: { display_name: displayName, role: "partner" },
+            });
+          if (createError || !created.user) {
+            authError =
+              createError?.message ??
+              "User konnte nicht angelegt werden. Haken bei Einladung setzen oder User vorher in Supabase Auth anlegen.";
+          } else {
+            userId = created.user.id;
+            inviteNote = "user-manuell";
+          }
+        } else {
+          userId = existing.id;
+          inviteNote = "bestehender-user";
+        }
       }
     }
   } catch (error) {
-    redirect(
-      `/dashboard/partners?error=${encodeURIComponent(
-        error instanceof Error ? error.message : "Auth-Fehler",
-      )}`,
-    );
+    // redirect()/notFound() must not be swallowed by this catch
+    unstable_rethrow(error);
+    authError = error instanceof Error ? error.message : "Auth-Fehler";
+  }
+
+  if (authError) {
+    redirect(`/dashboard/partners?error=${encodeURIComponent(authError)}`);
   }
 
   if (!userId) {

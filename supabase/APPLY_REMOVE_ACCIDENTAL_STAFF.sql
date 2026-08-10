@@ -1,0 +1,11 @@
+-- =============================================================================
+-- Optional: Auth-User aus staff_profiles entfernen (kein Admin mehr)
+-- =============================================================================
+-- 1. https://supabase.com/dashboard/project/lkqopssstvtekneycpgh/sql/new
+-- 2. E-Mail unten einsetzen → Run
+-- =============================================================================
+
+-- delete from public.staff_profiles
+-- where user_id in (
+--   select id from auth.users where email = 'partner@example.com'
+-- );

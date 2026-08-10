@@ -3,8 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Refreshes Supabase Auth session and protects /dashboard + /partner.
- * Staff (staff_profiles) may access /dashboard even if they also have a
- * partner profile. Pure partners are kept on /partner.
+ * Staff = explicit staff_profiles row only (not “any Auth user”).
+ * Staff may access /dashboard even with a partner profile; pure partners
+ * stay on /partner.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -75,9 +76,7 @@ export async function updateSession(request: NextRequest) {
       ]);
 
     const isPartnerUser = (partnerRows?.length ?? 0) > 0;
-    const hasStaffRow = !staffError && (staffRows?.length ?? 0) > 0;
-    // Explicit staff row, or legacy: no partner profile ⇒ staff
-    const isStaffUser = hasStaffRow || !isPartnerUser;
+    const isStaffUser = !staffError && (staffRows?.length ?? 0) > 0;
 
     if (isLogin) {
       const redirectUrl = request.nextUrl.clone();
@@ -85,21 +84,21 @@ export async function updateSession(request: NextRequest) {
         ? "/dashboard"
         : isPartnerUser
           ? "/partner"
-          : "/dashboard";
+          : "/auth/no-access";
       redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }
 
     if (isDashboard && !isStaffUser) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/partner";
+      redirectUrl.pathname = isPartnerUser ? "/partner" : "/auth/no-access";
       redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }
 
     if (isPartner && !isPartnerUser) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/dashboard";
+      redirectUrl.pathname = isStaffUser ? "/dashboard" : "/auth/no-access";
       redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }

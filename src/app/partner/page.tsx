@@ -1,11 +1,21 @@
 import { PartnerLinkGenerator } from "@/app/partner/link-generator";
+import { ClickStatsSection } from "@/components/click-stats-section";
+import {
+  getClickStats,
+  parseClickGranularity,
+} from "@/lib/clicks/stats";
 import { format } from "@/lib/dashboard/format";
 import { getPartnerPortalData } from "@/lib/partner/data";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function PartnerPage() {
+type PageProps = {
+  searchParams: Promise<{ clicks?: string }>;
+};
+
+export default async function PartnerPage({ searchParams }: PageProps) {
+  const params = await searchParams;
   const data = await getPartnerPortalData();
   if (!data) {
     redirect("/login");
@@ -24,6 +34,12 @@ export default async function PartnerPage() {
       </div>
     );
   }
+
+  const clickStats = await getClickStats({
+    channelIds: [data.channel.id],
+    granularity: parseClickGranularity(params.clicks),
+    includeChannelBreakdown: false,
+  });
 
   const commissionLabel = data.channel.is_commissionable
     ? data.channel.commission_type === "percentage"
@@ -48,10 +64,17 @@ export default async function PartnerPage() {
         <Kpi label="Buchungen" value={format.int(data.totals.bookings_count)} />
         <Kpi label="Provision" value={format.eur(data.totals.commission)} />
         <Kpi
-          label="Klicks"
+          label="Klicks (gesamt)"
           value={format.int(data.totals.touchpoints_count)}
         />
       </section>
+
+      <ClickStatsSection
+        stats={clickStats}
+        basePath="/partner"
+        title="Deine Klicks"
+        description="Wie oft dein Partner-Link geklickt wurde — nach Tag, Woche oder Monat (Europe/Berlin)."
+      />
 
       <section className="space-y-4">
         <div>

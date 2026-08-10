@@ -1,4 +1,9 @@
 import { toggleCsvReconciliationAction } from "@/app/dashboard/actions";
+import { ClickStatsSection } from "@/components/click-stats-section";
+import {
+  getClickStats,
+  parseClickGranularity,
+} from "@/lib/clicks/stats";
 import { format } from "@/lib/dashboard/format";
 import { getDashboardMetrics } from "@/lib/dashboard/metrics";
 import { isCsvReconciliationEnabled } from "@/lib/settings/app-settings";
@@ -9,6 +14,7 @@ export const dynamic = "force-dynamic";
 type PageProps = {
   searchParams: Promise<{
     hotel?: string;
+    clicks?: string;
     settings?: string;
     settings_error?: string;
   }>;
@@ -17,7 +23,13 @@ type PageProps = {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const hotelId = params.hotel?.trim() || null;
+  const clicksGranularity = parseClickGranularity(params.clicks);
   const metrics = await getDashboardMetrics(hotelId);
+  const clickStats = await getClickStats({
+    hotelId,
+    granularity: clicksGranularity,
+    includeChannelBreakdown: true,
+  });
   const maxRevenue = Math.max(...metrics.byChannel.map((r) => r.revenue), 1);
   const csvEnabled = await isCsvReconciliationEnabled();
 
@@ -40,6 +52,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             ))}
           </select>
         </label>
+        {params.clicks ? (
+          <input type="hidden" name="clicks" value={params.clicks} />
+        ) : null}
         <button
           type="submit"
           className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white"
@@ -47,7 +62,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           Filtern
         </button>
         {hotelId ? (
-          <Link href="/dashboard" className="pb-2 text-sm text-muted underline">
+          <Link
+            href={
+              params.clicks
+                ? `/dashboard?clicks=${encodeURIComponent(params.clicks)}`
+                : "/dashboard"
+            }
+            className="pb-2 text-sm text-muted underline"
+          >
             Filter zurücksetzen
           </Link>
         ) : null}
@@ -114,10 +136,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           value={format.eur(metrics.totals.commission)}
         />
         <Kpi
-          label="Touchpoints"
+          label="Klicks (gesamt)"
           value={format.int(metrics.totals.touchpoints_count)}
         />
       </section>
+
+      <ClickStatsSection
+        stats={clickStats}
+        basePath="/dashboard"
+        preserveParams={{ hotel: hotelId }}
+        showChannelBreakdown
+      />
 
       <section className="space-y-4">
         <div>

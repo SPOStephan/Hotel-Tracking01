@@ -1,3 +1,7 @@
+import {
+  startOfDayBerlin,
+  startOfMonthBerlin,
+} from "@/lib/clicks/periods";
 import { createClient } from "@/lib/supabase/server";
 import type { BookingStatus } from "@/types/database";
 
@@ -29,6 +33,9 @@ export type AdminPartnerListItem = {
   bookings_count: number;
   revenue: number;
   commission_total: number;
+  clicks_count: number;
+  clicks_today: number;
+  clicks_month: number;
 };
 
 const PROFILE_SELECT =
@@ -73,6 +80,27 @@ export async function listPartnersWithStats(): Promise<AdminPartnerListItem[]> {
       commissionTotal += money(row.calculated_commission);
     }
 
+    const todayIso = startOfDayBerlin(new Date()).toISOString();
+    const monthIso = startOfMonthBerlin(new Date()).toISOString();
+
+    const [{ count: clicksCount }, { count: clicksToday }, { count: clicksMonth }] =
+      await Promise.all([
+        supabase
+          .from("touchpoints")
+          .select("id", { count: "exact", head: true })
+          .eq("channel_id", profile.channel_id),
+        supabase
+          .from("touchpoints")
+          .select("id", { count: "exact", head: true })
+          .eq("channel_id", profile.channel_id)
+          .gte("created_at", todayIso),
+        supabase
+          .from("touchpoints")
+          .select("id", { count: "exact", head: true })
+          .eq("channel_id", profile.channel_id)
+          .gte("created_at", monthIso),
+      ]);
+
     let commissionLabel = "keine";
     let commissionPercent: number | null = null;
     if (channel?.is_commissionable) {
@@ -111,6 +139,9 @@ export async function listPartnersWithStats(): Promise<AdminPartnerListItem[]> {
       bookings_count: (bookings ?? []).length,
       revenue,
       commission_total: commissionTotal,
+      clicks_count: clicksCount ?? 0,
+      clicks_today: clicksToday ?? 0,
+      clicks_month: clicksMonth ?? 0,
     });
   }
 

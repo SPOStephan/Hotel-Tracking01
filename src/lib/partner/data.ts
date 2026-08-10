@@ -53,42 +53,70 @@ async function loadHotelLinkOptions(
   hotelLinkOptions: PartnerHotelLinkOption[];
 }> {
   if (hotelId) {
-    const { data: hotel } = await supabase
+    const withUrl = await supabase
       .from("hotels")
       .select("id, name, website_url")
       .eq("id", hotelId)
       .maybeSingle();
 
-    const url = hotel?.website_url?.trim() || null;
+    if (!withUrl.error && withUrl.data) {
+      const url = withUrl.data.website_url?.trim() || null;
+      return {
+        hotelName: withUrl.data.name ?? null,
+        defaultWebsiteUrl: url,
+        hotelLinkOptions:
+          url
+            ? [
+                {
+                  id: withUrl.data.id,
+                  name: withUrl.data.name,
+                  website_url: url,
+                },
+              ]
+            : [],
+      };
+    }
+
+    // Column missing or other error — still resolve hotel name.
+    const basic = await supabase
+      .from("hotels")
+      .select("id, name")
+      .eq("id", hotelId)
+      .maybeSingle();
     return {
-      hotelName: hotel?.name ?? null,
-      defaultWebsiteUrl: url,
-      hotelLinkOptions:
-        hotel && url
-          ? [{ id: hotel.id, name: hotel.name, website_url: url }]
-          : [],
+      hotelName: basic.data?.name ?? null,
+      defaultWebsiteUrl: null,
+      hotelLinkOptions: [],
     };
   }
 
-  const { data: hotels } = await supabase
+  const withUrl = await supabase
     .from("hotels")
     .select("id, name, website_url")
     .order("name");
 
-  const hotelLinkOptions = (hotels ?? [])
-    .filter((h): h is { id: string; name: string; website_url: string } =>
-      Boolean(h.website_url?.trim()),
-    )
-    .map((h) => ({
-      id: h.id,
-      name: h.name,
-      website_url: h.website_url.trim(),
-    }));
+  if (!withUrl.error) {
+    const hotelLinkOptions = (withUrl.data ?? [])
+      .filter((h): h is { id: string; name: string; website_url: string } =>
+        Boolean(h.website_url?.trim()),
+      )
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        website_url: h.website_url.trim(),
+      }));
+
+    return {
+      hotelName: "Alle Hotels",
+      defaultWebsiteUrl: hotelLinkOptions[0]?.website_url ?? null,
+      hotelLinkOptions,
+    };
+  }
 
   return {
     hotelName: "Alle Hotels",
-    defaultWebsiteUrl: hotelLinkOptions[0]?.website_url ?? null,
-    hotelLinkOptions,
+    defaultWebsiteUrl: null,
+    hotelLinkOptions: [],
   };
 }
 

@@ -15,17 +15,52 @@ type PageProps = {
 export default async function HotelsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const supabase = await createClient();
-  const { data: hotels } = await supabase
+
+  // Prefer full select; fall back if website_url migration not applied yet.
+  let loadError: string | null = null;
+  let schemaHint: string | null = null;
+
+  const primary = await supabase
     .from("hotels")
     .select("id, name, opb_version, opb_hotel_id, website_url, created_at")
     .order("name");
+
+  let hotels = primary.data;
+  if (primary.error) {
+    const missingWebsiteUrl =
+      /website_url/i.test(primary.error.message) ||
+      primary.error.code === "42703";
+    if (missingWebsiteUrl) {
+      schemaHint =
+        "Spalte website_url fehlt noch. Bitte APPLY_HOTELS_WEBSITE_URL.sql im Supabase SQL Editor ausführen — die Hotels sind nicht gelöscht.";
+      const fallback = await supabase
+        .from("hotels")
+        .select("id, name, opb_version, opb_hotel_id, created_at")
+        .order("name");
+      if (fallback.error) {
+        loadError = fallback.error.message;
+        hotels = [];
+      } else {
+        hotels = (fallback.data ?? []).map((h) => ({
+          ...h,
+          website_url: null as string | null,
+        }));
+      }
+    } else {
+      loadError = primary.error.message;
+      hotels = [];
+    }
+  }
 
   const rows = (hotels ?? []).map((hotel) => ({
     id: hotel.id,
     name: hotel.name,
     opb_version: hotel.opb_version,
     opb_hotel_id: hotel.opb_hotel_id,
-    website_url: hotel.website_url,
+    website_url:
+      "website_url" in hotel
+        ? ((hotel as { website_url?: string | null }).website_url ?? null)
+        : null,
   }));
 
   return (
@@ -45,9 +80,19 @@ export default async function HotelsPage({ searchParams }: PageProps) {
       {params.ok ? (
         <p className="text-sm text-emerald-800">{params.ok}</p>
       ) : null}
+      {loadError ? (
+        <p className="text-sm text-red-700">
+          Hotels konnten nicht geladen werden: {loadError}
+        </p>
+      ) : null}
+      {schemaHint ? (
+        <p className="text-sm text-amber-900">{schemaHint}</p>
+      ) : null}
 
       <section className="space-y-4">
-        <h3 className="font-medium">Vorhandene Hotels</h3>
+        <h3 className="font-medium">
+          Vorhandene Hotels ({rows.length})
+        </h3>
         <HotelList hotels={rows} appBase={APP_BASE} />
       </section>
 

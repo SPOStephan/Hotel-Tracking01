@@ -59,11 +59,9 @@ type TouchpointRow = {
   created_at: string;
 };
 
-// Supabase limits a single REST response to 1,000 rows by default. Keep this
-// page size explicit and fetch all relevant rows so the newest days are not
-// silently truncated when a partner link receives high traffic.
+// Supabase limits a single REST response to 1,000 rows by default. Fetch all
+// pages in the selected time window so newer rows are never silently truncated.
 const TOUCHPOINT_PAGE_SIZE = 1_000;
-const MAX_TOUCHPOINT_ROWS = 50_000;
 
 async function resolveChannelIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -115,11 +113,8 @@ export async function getClickStats(options: {
   const { count: allTimeCount } = await allTimeQuery;
 
   const touchpoints: TouchpointRow[] = [];
-  for (
-    let offset = 0;
-    offset < MAX_TOUCHPOINT_ROWS;
-    offset += TOUCHPOINT_PAGE_SIZE
-  ) {
+  let offset = 0;
+  while (true) {
     let rowsQuery = supabase
       .from("touchpoints")
       .select("id, channel_id, visitor_id, created_at")
@@ -140,6 +135,7 @@ export async function getClickStats(options: {
     const page = (data ?? []) as TouchpointRow[];
     touchpoints.push(...page);
     if (page.length < TOUCHPOINT_PAGE_SIZE) break;
+    offset += TOUCHPOINT_PAGE_SIZE;
   }
 
   let today = 0;

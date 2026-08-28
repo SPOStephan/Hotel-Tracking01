@@ -59,6 +59,12 @@ type TouchpointRow = {
   created_at: string;
 };
 
+// Supabase limits a single REST response to 1,000 rows by default. Keep this
+// page size explicit and fetch all relevant rows so the newest days are not
+// silently truncated when a partner link receives high traffic.
+const TOUCHPOINT_PAGE_SIZE = 1_000;
+const MAX_TOUCHPOINT_ROWS = 50_000;
+
 async function resolveChannelIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
   channelIds: string[] | null | undefined,
@@ -108,23 +114,33 @@ export async function getClickStats(options: {
   }
   const { count: allTimeCount } = await allTimeQuery;
 
-  let rowsQuery = supabase
-    .from("touchpoints")
-    .select("id, channel_id, visitor_id, created_at")
-    .gte("created_at", rangeStart.toISOString())
-    .lt("created_at", rangeEnd.toISOString())
-    .order("created_at", { ascending: true })
-    .limit(50000);
-  if (scopedIds) {
-    rowsQuery = rowsQuery.in("channel_id", scopedIds);
-  }
+  const touchpoints: TouchpointRow[] = [];
+  for (
+    let offset = 0;
+    offset < MAX_TOUCHPOINT_ROWS;
+    offset += TOUCHPOINT_PAGE_SIZE
+  ) {
+    let rowsQuery = supabase
+      .from("touchpoints")
+      .select("id, channel_id, visitor_id, created_at")
+      .gte("created_at", rangeStart.toISOString())
+      .lt("created_at", rangeEnd.toISOString())
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + TOUCHPOINT_PAGE_SIZE - 1);
+    if (scopedIds) {
+      rowsQuery = rowsQuery.in("channel_id", scopedIds);
+    }
 
-  const { data: rows, error } = await rowsQuery;
-  if (error) {
-    throw new Error(error.message);
-  }
+    const { data, error } = await rowsQuery;
+    if (error) {
+      throw new Error(error.message);
+    }
 
-  const touchpoints = (rows ?? []) as TouchpointRow[];
+    const page = (data ?? []) as TouchpointRow[];
+    touchpoints.push(...page);
+    if (page.length < TOUCHPOINT_PAGE_SIZE) break;
+  }
 
   let today = 0;
   let thisWeek = 0;
